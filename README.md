@@ -66,6 +66,7 @@ Each app is independent. Navigate to the app folder and follow its README for lo
 
 ## Documentation
 
+- **[QUICKSTART.md](./QUICKSTART.md)** - Get your first app deployed in 5 minutes ⚡
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide and best practices
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** - How to add new apps to this monorepo
 - **[Fly.io Templates](./.github/fly-templates/)** - Configuration templates for different stacks
