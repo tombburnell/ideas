@@ -1,0 +1,27 @@
+# Fly.io configuration template for Node.js apps
+# Copy this to your app folder and rename to fly.toml
+# Update the app name to be unique
+
+app = "your-app-name-here"
+primary_region = "ord"  # Change to your preferred region
+
+[build]
+
+[http_service]
+  internal_port = 3000  # Change to match your app's port
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256  # Adjust based on your needs (256, 512, 1024, etc.)
+
+# Optional: Add environment variables
+# [env]
+#   NODE_ENV = "production"
+
+# Optional: Add secrets using: fly secrets set KEY=value
