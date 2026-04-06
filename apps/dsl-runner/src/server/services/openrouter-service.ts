@@ -31,6 +31,17 @@ const createOutputSchema = (step: WorkflowLlmStep): z.ZodObject<Record<string, z
 
 const modelForKey = (modelKey: WorkflowModelKey) => openrouter(appConfig.openRouter.models[modelKey]);
 
+const stripCodeFences = (value: string): string => {
+  const trimmed = value.trim();
+  const fencedMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+
+  if (fencedMatch) {
+    return fencedMatch[1].trim();
+  }
+
+  return trimmed;
+};
+
 const webSearchTool = tool({
   description: "Search the web for current information related to the workflow prompt.",
   inputSchema: z.object({
@@ -66,6 +77,7 @@ const webSearchTool = tool({
 export const openRouterService = {
   async executeWorkflowStep(input: {
     step: WorkflowLlmStep;
+    promptId: string;
     promptTemplate: string;
     contextData: Record<string, unknown>;
   }): Promise<Record<string, unknown>> {
@@ -74,13 +86,24 @@ export const openRouterService = {
       return typeof value === "string" ? value : JSON.stringify(value ?? "");
     });
 
+    console.info(
+      `[workflow] llm request step=${input.step.id} prompt=${input.promptId} model=${input.step.model} tools=${input.step.tools?.join(",") ?? "none"}`
+    );
+
     const response = await generateText({
       model: modelForKey(input.step.model),
       prompt: `${prompt}\n\nContext:\n${JSON.stringify(input.contextData, null, 2)}`,
       tools: input.step.tools?.includes("web_search") ? { web_search: webSearchTool } : undefined
     });
 
-    const parsed = createOutputSchema(input.step).parse(JSON.parse(response.text));
+    const sanitizedText = stripCodeFences(response.text);
+
+    console.info(`[workflow] llm raw response step=${input.step.id} text=${JSON.stringify(response.text)}`);
+
+    const parsed = createOutputSchema(input.step).parse(JSON.parse(sanitizedText));
+
+    console.info(`[workflow] llm parsed response step=${input.step.id} output=${JSON.stringify(parsed)}`);
+
     return parsed as Record<string, unknown>;
   },
 

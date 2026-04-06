@@ -37,6 +37,10 @@ export const runOrchestrator = {
       workflowId: workflow.workflowId
     });
 
+    console.info(
+      `[workflow] queued run=${runId} workflow=${workflow.workflowId} formData=${JSON.stringify(input.formData)}`
+    );
+
     return runId;
   },
 
@@ -66,7 +70,15 @@ export const runOrchestrator = {
     try {
       const executionPlan = await langGraphService.compileExecutionPlan(definition, contextData);
 
+      console.info(
+        `[workflow] started run=${runId} workflow=${run.workflow.workflowId} executionPlan=${executionPlan.map((step) => step.id).join(",")}`
+      );
+
       for (const [orderIndex, step] of executionPlan.entries()) {
+        console.info(
+          `[workflow] step start run=${runId} step=${step.id} type=${step.type} order=${orderIndex} context=${JSON.stringify(contextData)}`
+        );
+
         const stepRecord = await runRepo.createStep({
           runId,
           stepId: step.id,
@@ -87,11 +99,16 @@ export const runOrchestrator = {
 
           const outputData = await openRouterService.executeWorkflowStep({
             step: llmStep,
+            promptId: prompt.promptId,
             promptTemplate: prompt.template,
             contextData
           });
 
           Object.assign(contextData, outputData);
+
+          console.info(
+            `[workflow] step success run=${runId} step=${step.id} output=${JSON.stringify(outputData)} nextContext=${JSON.stringify(contextData)}`
+          );
 
           const completedStep = await runRepo.completeStep({
             stepRecordId: stepRecord.id,
@@ -101,6 +118,9 @@ export const runOrchestrator = {
           runEventBus.publish(createEvent({ runId, status: "running", step: completedStep, errorMessage: null }));
         } catch (error) {
           const message = error instanceof Error ? error.message : "Workflow step failed";
+
+          console.error(`[workflow] step failure run=${runId} step=${step.id} error=${message}`);
+
           const failedStep = await runRepo.failStep({
             stepRecordId: stepRecord.id,
             errorMessage: message
@@ -127,9 +147,14 @@ export const runOrchestrator = {
         completedAt: new Date()
       });
 
+      console.info(`[workflow] completed run=${runId} finalContext=${JSON.stringify(contextData)}`);
+
       runEventBus.publish(createEvent({ runId, status: "completed", errorMessage: null }));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Workflow execution failed";
+
+      console.error(`[workflow] run failure run=${runId} error=${message}`);
+
       await runRepo.setRunStatus({
         runId,
         status: "failed",
