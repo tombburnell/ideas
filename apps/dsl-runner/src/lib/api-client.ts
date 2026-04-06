@@ -2,6 +2,7 @@ import type {
   ChatEditInput,
   ChatEditResult,
   CreateRunInput,
+  ReportListResponse,
   RunDetailResponse,
   ValidationResponse,
   WorkflowDetailResponse,
@@ -58,6 +59,10 @@ export const apiClient = {
 
   createRun(input: CreateRunInput): Promise<{ runId: string }> {
     return postJson<{ runId: string }>("/api/runs", input);
+  },
+
+  listReports(): Promise<ReportListResponse> {
+    return fetch("/api/reports").then(parseResponse<ReportListResponse>);
   },
 
   getRun(runId: string): Promise<RunDetailResponse> {

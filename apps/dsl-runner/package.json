@@ -25,6 +25,7 @@
     "dotenv": "latest",
     "express": "latest",
     "ioredis": "latest",
+    "mermaid": "^11.14.0",
     "next": "latest",
     "prisma": "latest",
     "react": "latest",

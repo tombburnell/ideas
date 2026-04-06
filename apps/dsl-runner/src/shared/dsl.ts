@@ -106,6 +106,16 @@ export interface WorkflowRunDetail extends WorkflowRunRecord {
   steps: WorkflowStepRecord[];
 }
 
+export interface WorkflowReportSummary {
+  runId: string;
+  workflowId: string;
+  workflowName: string;
+  status: WorkflowRunStatus;
+  createdAt: string;
+  completedAt: string | null;
+  preview: string | null;
+}
+
 export interface ValidationIssue {
   path: string;
   message: string;
@@ -164,4 +174,8 @@ export interface RunDetailResponse {
 
 export interface ValidationResponse {
   validation: ValidationResult;
+}
+
+export interface ReportListResponse {
+  reports: WorkflowReportSummary[];
 }

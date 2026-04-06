@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChatEditorPanel } from "@/components/chat-editor-panel";
 import { DslEditor } from "@/components/dsl-editor";
 import { RunForm } from "@/components/run-form";
+import { WorkflowDiagram } from "@/components/workflow-diagram";
 import { WorkflowList } from "@/components/workflow-list";
 import { useChatEdit } from "@/hooks/use-chat-edit";
 import { useCreateRun } from "@/hooks/use-create-run";
@@ -62,6 +64,9 @@ const HomePage = (): React.ReactElement => {
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300">
           <p>{promptsQuery.data?.prompts.length ?? 0} prompts loaded</p>
           <p>{workflows.length} workflows persisted</p>
+          <Link className="mt-2 inline-block text-cyan-300 underline" href="/reports">
+            View reports
+          </Link>
         </div>
       </div>
 
@@ -142,6 +147,7 @@ const HomePage = (): React.ReactElement => {
             </div>
           </section>
 
+          <WorkflowDiagram dsl={dsl} />
           <DslEditor value={dsl} onChange={setDsl} validation={validateMutation.data?.validation ?? null} />
         </div>
       </div>

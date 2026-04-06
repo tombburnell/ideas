@@ -121,8 +121,12 @@ export const openRouterService = {
   async editDsl(input: {
     dsl: string;
     instruction: string;
+    validationErrors?: string[];
+    attempt: number;
   }): Promise<string> {
-    console.info(`[chat] edit request model=smart instruction=${JSON.stringify(input.instruction)}`);
+    console.info(
+      `[chat] edit request model=smart attempt=${input.attempt} instruction=${JSON.stringify(input.instruction)}`
+    );
 
     try {
       const response = await generateObject({
@@ -133,6 +137,13 @@ export const openRouterService = {
         prompt: [
           "You edit workflow DSL written as YAML.",
           "Return only valid YAML in the dsl field.",
+          "Return the complete updated workflow DSL document, not a fragment.",
+          "Preserve unchanged top-level keys and unchanged steps.",
+          "Always include top-level keys: id, name, form, steps.",
+          "When adding a new step, keep the rest of the workflow intact.",
+          ...(input.validationErrors && input.validationErrors.length > 0
+            ? ["Previous attempt failed validation.", `Fix these errors exactly: ${input.validationErrors.join(" | ")}`]
+            : []),
           "Do not add commentary.",
           "Instruction:",
           input.instruction,
@@ -141,12 +152,14 @@ export const openRouterService = {
         ].join("\n")
       });
 
-      console.info(`[chat] edit response model=smart dslLength=${response.object.dsl.length}`);
+      console.info(
+        `[chat] edit response model=smart attempt=${input.attempt} dslLength=${response.object.dsl.length}`
+      );
 
       return response.object.dsl;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Chat edit failed";
-      console.error(`[chat] edit failure model=smart error=${message}`);
+      console.error(`[chat] edit failure model=smart attempt=${input.attempt} error=${message}`);
       throw error;
     }
   }

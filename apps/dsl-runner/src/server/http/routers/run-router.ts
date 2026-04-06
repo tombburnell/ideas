@@ -6,6 +6,15 @@ import type { CreateRunInput } from "@/shared/dsl";
 
 export const runRouter = Router();
 
+runRouter.get("/reports", async (_request, response, next) => {
+  try {
+    const reports = await runRepo.listRecentReports();
+    response.json({ reports });
+  } catch (error) {
+    next(error);
+  }
+});
+
 runRouter.post("/runs", async (request, response, next) => {
   try {
     const payload = request.body as CreateRunInput;
