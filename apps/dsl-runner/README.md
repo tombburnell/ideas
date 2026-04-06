@@ -28,15 +28,21 @@ DSL Runner is a full-stack workflow playground that lets you define YAML-based L
    npm install
    ```
 
-4. Start Redis locally on port `6379`.
+4. Create and apply the local migration:
 
-5. Start the app:
+   ```bash
+   DATABASE_URL="file:./dev.db" npx prisma migrate dev
+   ```
+
+5. Start Redis locally on port `6379`.
+
+6. Start the app:
 
    ```bash
    npm run dev
    ```
 
-6. Open `http://localhost:3000`.
+7. Open `http://localhost:3000`.
 
 ## Production on Fly.io
 
@@ -52,5 +58,7 @@ DSL Runner is a full-stack workflow playground that lets you define YAML-based L
    ```bash
    fly deploy
    ```
+
+4. On startup, the container runs `prisma migrate deploy` before starting the server.
 
 Redis runs inside the same container as the app, so no separate Redis service is required.

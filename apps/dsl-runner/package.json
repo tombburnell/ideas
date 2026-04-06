@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "tsx watch src/server/index.ts",
     "build": "prisma generate && next build && tsc -p tsconfig.server.json && tsc-alias -p tsconfig.server.json",
-    "start": "prisma db push && node dist/server/index.js",
+    "start": "prisma migrate deploy && node dist/server/index.js",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit",
-    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate"
   },
   "dependencies": {
