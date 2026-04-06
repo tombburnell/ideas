@@ -270,18 +270,18 @@ function trySetDir(nx, ny) {
   nextDir = { x: nx, y: ny };
 }
 
-/** Touch ←/→: turn 90° relative to current heading (not screen-absolute). */
+/** ←/→ (keyboard or touch): 90° turn relative to current heading. */
 function headingForRelativeTurn() {
   if (running || paused || gameOver) return dir;
   return nextDir;
 }
 
-function turnTouchLeft() {
+function turnLeft() {
   const d = headingForRelativeTurn();
   nextDir = { x: d.y, y: -d.x };
 }
 
-function turnTouchRight() {
+function turnRight() {
   const d = headingForRelativeTurn();
   nextDir = { x: -d.y, y: d.x };
 }
@@ -302,8 +302,8 @@ document.addEventListener("keydown", (e) => {
   const k = e.key;
   if (k === "ArrowUp") trySetDir(0, -1);
   else if (k === "ArrowDown") trySetDir(0, 1);
-  else if (k === "ArrowLeft") trySetDir(-1, 0);
-  else if (k === "ArrowRight") trySetDir(1, 0);
+  else if (k === "ArrowLeft") turnLeft();
+  else if (k === "ArrowRight") turnRight();
   else if (k === "p" || k === "P") togglePause();
   else if (k === "r" || k === "R") reset();
   else return;
@@ -368,8 +368,8 @@ function applyDirFromButton(btn) {
   const d = btn.getAttribute("data-dir");
   if (d === "up") trySetDir(0, -1);
   else if (d === "down") trySetDir(0, 1);
-  else if (d === "left") turnTouchLeft();
-  else if (d === "right") turnTouchRight();
+  else if (d === "left") turnLeft();
+  else if (d === "right") turnRight();
 }
 
 const touchPadLr = document.getElementById("touchPadLr");
