@@ -12,6 +12,32 @@ const leaderboardEl = document.getElementById("leaderboard");
 const scoresErrorEl = document.getElementById("scoresError");
 const touchPause = document.getElementById("touchPause");
 const touchRestart = document.getElementById("touchRestart");
+const helpToggle = document.getElementById("helpToggle");
+const helpBody = document.getElementById("helpBody");
+
+function syncHelpPanel() {
+  if (!helpToggle || !helpBody) return;
+  const wide = window.matchMedia("(min-width: 720px)").matches;
+  if (wide) {
+    helpBody.classList.add("is-open");
+    helpBody.setAttribute("aria-hidden", "false");
+    helpToggle.setAttribute("aria-expanded", "true");
+  } else {
+    helpBody.classList.remove("is-open");
+    helpBody.setAttribute("aria-hidden", "true");
+    helpToggle.setAttribute("aria-expanded", "false");
+  }
+}
+
+helpToggle?.addEventListener("click", () => {
+  const open = !helpBody.classList.contains("is-open");
+  helpBody.classList.toggle("is-open", open);
+  helpBody.setAttribute("aria-hidden", String(!open));
+  helpToggle.setAttribute("aria-expanded", String(open));
+});
+
+window.matchMedia("(min-width: 720px)").addEventListener("change", syncHelpPanel);
+syncHelpPanel();
 
 let cell = 20;
 
