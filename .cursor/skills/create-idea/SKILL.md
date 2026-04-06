@@ -26,6 +26,7 @@ Workflow for adding a new deployable app under `apps/<kebab-name>/` and opening 
 ## Conventions
 
 - Fly.io app name: `{{folder}}-idea` in `fly.toml`.
+- Default `primary_region`: `lhr` (London); override if the user prefers another region.
 - Secrets: `fly secrets set DATABASE_URL=...` etc., never in git.
 - Merge to `main` triggers `.github/workflows/deploy.yml` for changed apps only.
 

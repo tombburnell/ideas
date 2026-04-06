@@ -3,7 +3,7 @@
 # Update the app name to be unique
 
 app = "your-app-name-here"
-primary_region = "ord"  # Change to your preferred region
+primary_region = "lhr"  # e.g. lhr (London), ord (Chicago) — see Fly regions docs
 
 [build]
 

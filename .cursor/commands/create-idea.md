@@ -20,6 +20,7 @@ Ask concise follow-up questions until these are clear (skip any the user already
 - **Non-functional**: performance, privacy, accessibility, expected traffic.
 - **Tech stack**: language/runtime, framework, DB if needed (default: **Node + Express** or **static** for simple sites; **Postgres on Fly** when persistence is required).
 - **Fly app name**: must be globally unique; use pattern `{{folder}}-idea` in `fly.toml` (e.g. `retro-snake-idea` for folder `retro-snake`).
+- **Region**: default `primary_region = "lhr"` (London) unless the user asks otherwise.
 
 ### 2. Plan
 

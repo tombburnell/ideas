@@ -177,7 +177,7 @@ fly deploy
 fly deploy --ha=false
 
 # Deploy to specific region
-fly deploy --region ord
+fly deploy --region lhr
 
 # Deploy without remote builder
 fly deploy --local-only

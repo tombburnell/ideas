@@ -23,9 +23,9 @@ This folder contains templates for common application types. Copy the appropriat
 
 ## Common Regions
 
+- `lhr` - London (UK) — default in this repo’s templates
 - `ord` - Chicago, IL (USA)
 - `iad` - Ashburn, VA (USA)
-- `lhr` - London (UK)
 - `fra` - Frankfurt (Germany)
 - `nrt` - Tokyo (Japan)
 - `syd` - Sydney (Australia)

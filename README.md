@@ -46,6 +46,8 @@ Each app is automatically deployed to Fly.io when changes are detected:
 
 **Note:** Apps are automatically created on first deployment. Use the `-idea` suffix in `app = "my-app-idea"` so names stay unique on Fly.io.
 
+**Region:** Templates and example apps use **`lhr` (London)** as `primary_region`. Fly.io [prices machines by region](https://fly.io/docs/about/pricing/) slightly differently; use the [calculator](https://fly.io/calculator) to compare. For UK users, `lhr` is usually the best latency.
+
 ### Tech Stack Freedom
 
 Each app can use any technology stack:
