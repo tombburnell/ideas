@@ -1,5 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { load } from "cheerio";
 import { z } from "zod";
 import { appConfig } from "@/config/app-config";
@@ -70,6 +70,17 @@ const buildSearchQuery = (contextData: Record<string, unknown>, prompt: string):
   return query.length > 0 ? query : prompt;
 };
 
+const stripYamlCodeFences = (value: string): string => {
+  const trimmed = value.trim();
+  const fencedMatch = trimmed.match(/^```(?:yaml|yml)?\s*([\s\S]*?)\s*```$/i);
+
+  if (fencedMatch) {
+    return fencedMatch[1].trim();
+  }
+
+  return trimmed;
+};
+
 export const openRouterService = {
   async executeWorkflowStep(input: {
     step: WorkflowLlmStep;
@@ -129,14 +140,11 @@ export const openRouterService = {
     );
 
     try {
-      const response = await generateObject({
+      const response = await generateText({
         model: modelForKey("smart"),
-        schema: z.object({
-          dsl: z.string().min(1)
-        }),
         prompt: [
           "You edit workflow DSL written as YAML.",
-          "Return only valid YAML in the dsl field.",
+          "Return only the complete updated YAML workflow document.",
           "Return the complete updated workflow DSL document, not a fragment.",
           "Preserve unchanged top-level keys and unchanged steps.",
           "Always include top-level keys: id, name, form, steps.",
@@ -152,11 +160,13 @@ export const openRouterService = {
         ].join("\n")
       });
 
+      const normalizedDsl = stripYamlCodeFences(response.text);
+
       console.info(
-        `[chat] edit response model=smart attempt=${input.attempt} dslLength=${response.object.dsl.length}`
+        `[chat] edit response model=smart attempt=${input.attempt} dslLength=${normalizedDsl.length} raw=${JSON.stringify(response.text)}`
       );
 
-      return response.object.dsl;
+      return normalizedDsl;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Chat edit failed";
       console.error(`[chat] edit failure model=smart attempt=${input.attempt} error=${message}`);

@@ -32,9 +32,13 @@ export const WorkflowDiagram = ({ dsl }: WorkflowDiagramProps): React.ReactEleme
         });
 
         const rendered = await mermaidModule.default.render(`workflow_diagram_${diagramId}`, chart);
+        const compactSvg = rendered.svg.replace(
+          "<svg ",
+          '<svg style="max-width: 960px; width: 100%; height: auto; display: block; margin: 0 auto;" '
+        );
 
         if (!cancelled) {
-          setSvg(rendered.svg);
+          setSvg(compactSvg);
           setError(null);
         }
       } catch (renderError) {
@@ -61,7 +65,7 @@ export const WorkflowDiagram = ({ dsl }: WorkflowDiagramProps): React.ReactEleme
       </div>
       {svg ? (
         <div
-          className="overflow-auto rounded-xl border border-zinc-800 bg-zinc-950 p-4"
+          className="max-h-[280px] overflow-auto rounded-xl border border-zinc-800 bg-zinc-950 p-3"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       ) : (

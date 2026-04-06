@@ -27,7 +27,7 @@ export const buildWorkflowMermaid = (dsl: string): string | null => {
       return null;
     }
 
-    const lines = ["flowchart TD", `start([\"${escapeLabel(definition.name)}\"])`];
+    const lines = ["flowchart LR", `start([\"${escapeLabel(definition.name)}\"])`];
 
     for (const step of definition.steps) {
       lines.push(`${nodeIdForStep(step.id)}["${escapeLabel(`${step.id} (${step.type})`)}"]`);
