@@ -270,6 +270,22 @@ function trySetDir(nx, ny) {
   nextDir = { x: nx, y: ny };
 }
 
+/** Touch ←/→: turn 90° relative to current heading (not screen-absolute). */
+function headingForRelativeTurn() {
+  if (running || paused || gameOver) return dir;
+  return nextDir;
+}
+
+function turnTouchLeft() {
+  const d = headingForRelativeTurn();
+  nextDir = { x: d.y, y: -d.x };
+}
+
+function turnTouchRight() {
+  const d = headingForRelativeTurn();
+  nextDir = { x: -d.y, y: d.x };
+}
+
 document.addEventListener("keydown", (e) => {
   if (scoresModal && !scoresModal.hidden && e.key !== "Escape") return;
 
@@ -352,8 +368,8 @@ function applyDirFromButton(btn) {
   const d = btn.getAttribute("data-dir");
   if (d === "up") trySetDir(0, -1);
   else if (d === "down") trySetDir(0, 1);
-  else if (d === "left") trySetDir(-1, 0);
-  else if (d === "right") trySetDir(1, 0);
+  else if (d === "left") turnTouchLeft();
+  else if (d === "right") turnTouchRight();
 }
 
 const touchPadLr = document.getElementById("touchPadLr");
