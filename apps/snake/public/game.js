@@ -98,10 +98,6 @@ let tickId = null;
 let gameOver = false;
 let lastSubmittedScore = null;
 
-function effectiveDir() {
-  return running ? dir : nextDir;
-}
-
 function randCell() {
   return {
     x: Math.floor(Math.random() * GRID),
@@ -271,11 +267,12 @@ function togglePause() {
 }
 
 function trySetDir(nx, ny) {
-  const d = effectiveDir();
-  if (nx === 0 && ny === -1 && d.y !== 0) return;
-  if (nx === 0 && ny === 1 && d.y !== 0) return;
-  if (nx === -1 && ny === 0 && d.x !== 0) return;
-  if (nx === 1 && ny === 0 && d.x !== 0) return;
+  if (!running) {
+    nextDir = { x: nx, y: ny };
+    return;
+  }
+  // Only block 180° into the segment behind the head (not "any horizontal while moving horizontally")
+  if (nx === -dir.x && ny === -dir.y) return;
   nextDir = { x: nx, y: ny };
 }
 
