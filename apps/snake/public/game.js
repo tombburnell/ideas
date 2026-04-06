@@ -365,36 +365,12 @@ function applyDirFromButton(btn) {
   else if (d === "right") trySetDir(1, 0);
 }
 
-/** iOS Safari is flaky with pointer events on buttons; touchstart + click is reliable. */
-function bindTouchButton(btn, handler) {
-  if (!btn) return;
-  let touchHandled = false;
-  btn.addEventListener(
-    "touchstart",
-    (e) => {
-      touchHandled = true;
-      e.preventDefault();
-      handler();
-    },
-    { passive: false }
-  );
-  btn.addEventListener("click", (e) => {
-    if (touchHandled) {
-      touchHandled = false;
-      e.preventDefault();
-      return;
-    }
-    e.preventDefault();
-    handler();
-  });
-}
-
 document.querySelectorAll(".touch-btn[data-dir]").forEach((btn) => {
-  bindTouchButton(btn, () => applyDirFromButton(btn));
+  btn.addEventListener("click", () => applyDirFromButton(btn));
 });
 
-bindTouchButton(touchPause, () => togglePause());
-bindTouchButton(touchRestart, () => reset());
+touchPause?.addEventListener("click", () => togglePause());
+touchRestart?.addEventListener("click", () => reset());
 
 const ro = new ResizeObserver(() => layoutCanvas());
 if (canvasWrap) ro.observe(canvasWrap);
