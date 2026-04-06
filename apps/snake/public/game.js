@@ -357,26 +357,44 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-document.querySelectorAll(".touch-btn[data-dir]").forEach((btn) => {
-  btn.addEventListener("pointerdown", (e) => {
+function applyDirFromButton(btn) {
+  const d = btn.getAttribute("data-dir");
+  if (d === "up") trySetDir(0, -1);
+  else if (d === "down") trySetDir(0, 1);
+  else if (d === "left") trySetDir(-1, 0);
+  else if (d === "right") trySetDir(1, 0);
+}
+
+/** iOS Safari is flaky with pointer events on buttons; touchstart + click is reliable. */
+function bindTouchButton(btn, handler) {
+  if (!btn) return;
+  let touchHandled = false;
+  btn.addEventListener(
+    "touchstart",
+    (e) => {
+      touchHandled = true;
+      e.preventDefault();
+      handler();
+    },
+    { passive: false }
+  );
+  btn.addEventListener("click", (e) => {
+    if (touchHandled) {
+      touchHandled = false;
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
-    const d = btn.getAttribute("data-dir");
-    if (d === "up") trySetDir(0, -1);
-    else if (d === "down") trySetDir(0, 1);
-    else if (d === "left") trySetDir(-1, 0);
-    else if (d === "right") trySetDir(1, 0);
+    handler();
   });
+}
+
+document.querySelectorAll(".touch-btn[data-dir]").forEach((btn) => {
+  bindTouchButton(btn, () => applyDirFromButton(btn));
 });
 
-touchPause?.addEventListener("pointerdown", (e) => {
-  e.preventDefault();
-  togglePause();
-});
-
-touchRestart?.addEventListener("pointerdown", (e) => {
-  e.preventDefault();
-  reset();
-});
+bindTouchButton(touchPause, () => togglePause());
+bindTouchButton(touchRestart, () => reset());
 
 const ro = new ResizeObserver(() => layoutCanvas());
 if (canvasWrap) ro.observe(canvasWrap);
