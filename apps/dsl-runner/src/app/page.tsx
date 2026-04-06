@@ -12,7 +12,7 @@ import { usePrompts, useSaveWorkflow, useWorkflows } from "@/hooks/use-workflows
 import { useWorkflowValidation } from "@/hooks/use-workflow-validation";
 import { defaultDsl } from "@/lib/default-dsl";
 
-const HomePage = (): JSX.Element => {
+const HomePage = (): React.ReactElement => {
   const router = useRouter();
   const workflowsQuery = useWorkflows();
   const promptsQuery = usePrompts();

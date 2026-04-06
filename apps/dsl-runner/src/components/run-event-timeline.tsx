@@ -6,7 +6,7 @@ interface RunEventTimelineProps {
   run: WorkflowRunDetail;
 }
 
-export const RunEventTimeline = ({ run }: RunEventTimelineProps): JSX.Element => (
+export const RunEventTimeline = ({ run }: RunEventTimelineProps): React.ReactElement => (
   <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 shadow-xl shadow-zinc-950/20">
     <div className="mb-4 flex items-center justify-between">
       <h2 className="text-lg font-semibold text-zinc-100">Execution Timeline</h2>

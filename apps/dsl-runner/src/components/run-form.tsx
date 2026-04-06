@@ -9,7 +9,7 @@ interface RunFormProps {
   onSubmit: (formData: Record<string, string>) => Promise<void>;
 }
 
-export const RunForm = ({ workflow, isPending, onSubmit }: RunFormProps): JSX.Element => {
+export const RunForm = ({ workflow, isPending, onSubmit }: RunFormProps): React.ReactElement => {
   const initialForm = useMemo(() => {
     const fields = workflow?.definition.form.fields ?? [];
     return Object.fromEntries(fields.map((field) => [field.name, ""])) as Record<string, string>;

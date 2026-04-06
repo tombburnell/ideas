@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "DSL-driven workflow runner with live execution visibility"
 };
 
-const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>): JSX.Element => (
+const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>): React.ReactElement => (
   <html lang="en">
     <body>
       <QueryProvider>{children}</QueryProvider>

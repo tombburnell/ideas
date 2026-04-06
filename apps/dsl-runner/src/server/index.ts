@@ -15,7 +15,9 @@ const bootstrap = async (): Promise<void> => {
 
   const apiApp = createApiApp();
 
-  apiApp.all(/.*/, (request, response) => nextHandler(request, response));
+  apiApp.all(/.*/, (request: Parameters<typeof nextHandler>[0], response: Parameters<typeof nextHandler>[1]) =>
+    nextHandler(request, response)
+  );
 
   const server = http.createServer(apiApp);
 

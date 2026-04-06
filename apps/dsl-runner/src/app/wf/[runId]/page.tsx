@@ -1,19 +1,16 @@
 "use client";
 
-import { use } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { RunEventTimeline } from "@/components/run-event-timeline";
 import { useRunDetail } from "@/hooks/use-run-detail";
 import { useRunStream } from "@/hooks/use-run-stream";
 
-interface RunPageProps {
-  params: Promise<{ runId: string }>;
-}
-
-const RunPage = ({ params }: RunPageProps): JSX.Element => {
-  const resolvedParams = use(params);
-  const runQuery = useRunDetail(resolvedParams.runId);
-  const latestEvent = useRunStream(resolvedParams.runId);
+const RunPage = (): React.ReactElement => {
+  const params = useParams<{ runId: string }>();
+  const runId = params.runId;
+  const runQuery = useRunDetail(runId);
+  const latestEvent = useRunStream(runId);
 
   if (runQuery.isLoading || !runQuery.data) {
     return <main className="p-8 text-zinc-200">Loading run...</main>;

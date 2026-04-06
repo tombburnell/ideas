@@ -8,7 +8,7 @@ interface WorkflowListProps {
   onSelect: (workflowId: string) => void;
 }
 
-export const WorkflowList = ({ workflows, selectedWorkflowId, onSelect }: WorkflowListProps): JSX.Element => (
+export const WorkflowList = ({ workflows, selectedWorkflowId, onSelect }: WorkflowListProps): React.ReactElement => (
   <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 shadow-xl shadow-zinc-950/20">
     <div className="mb-3 flex items-center justify-between">
       <h2 className="text-lg font-semibold text-zinc-100">Workflows</h2>

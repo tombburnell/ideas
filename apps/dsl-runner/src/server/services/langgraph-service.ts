@@ -1,4 +1,4 @@
-import { StateGraph } from "@langchain/langgraph";
+import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import type {
   WorkflowBranchStep,
   WorkflowDslDefinition,
@@ -7,24 +7,19 @@ import type {
   WorkflowStepDefinition
 } from "@/shared/dsl";
 
-export interface ExecutionState {
-  contextData: Record<string, unknown>;
-  orderedSteps: WorkflowStepDefinition[];
-}
-
-const graphState = {
-  contextData: {
-    value: (current: Record<string, unknown>, next: Record<string, unknown>) => ({
+const ExecutionPlanAnnotation = Annotation.Root({
+  contextData: Annotation<Record<string, unknown>>({
+    reducer: (current, next) => ({
       ...current,
       ...next
     }),
     default: () => ({})
-  },
-  orderedSteps: {
-    value: (current: WorkflowStepDefinition[], next: WorkflowStepDefinition[]) => (next.length > 0 ? next : current),
+  }),
+  orderedSteps: Annotation<WorkflowStepDefinition[]>({
+    reducer: (_current, next) => next,
     default: () => []
-  }
-};
+  })
+});
 
 const branchCondition = (branchStep: WorkflowBranchStep, contextData: Record<string, unknown>): string => {
   const evaluator = new Function("context", `return (${branchStep.condition});`) as (context: Record<string, unknown>) => boolean;
@@ -80,17 +75,13 @@ const flattenExecutionOrder = (definition: WorkflowDslDefinition, contextData: R
 
 export const langGraphService = {
   async compileExecutionPlan(definition: WorkflowDslDefinition, contextData: Record<string, unknown>): Promise<WorkflowStepDefinition[]> {
-    const graph = new StateGraph({
-      channels: graphState
-    });
-
-    graph.addNode("compile_plan", async (state: ExecutionState) => ({
+    const graph = new StateGraph(ExecutionPlanAnnotation)
+      .addNode("compile_plan", async (state: typeof ExecutionPlanAnnotation.State) => ({
       contextData: state.contextData,
       orderedSteps: flattenExecutionOrder(definition, state.contextData)
-    }));
-
-    graph.setEntryPoint("compile_plan");
-    graph.setFinishPoint("compile_plan");
+      }))
+      .addEdge(START, "compile_plan")
+      .addEdge("compile_plan", END);
 
     const compiled = graph.compile();
     const result = await compiled.invoke({

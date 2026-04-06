@@ -22,7 +22,7 @@ const llmStepSchema = z.object({
   type: z.literal("llm"),
   prompt: z.string().min(1),
   input: z.string().optional(),
-  output: z.record(z.enum(["string", "number", "boolean"])),
+  output: z.record(z.string(), z.enum(["string", "number", "boolean"])),
   model: z.enum(["fast", "smart", "reasoning"]),
   tools: z.array(z.string().min(1)).optional()
 });

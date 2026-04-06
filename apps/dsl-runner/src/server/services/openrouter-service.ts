@@ -1,5 +1,6 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateObject, tool } from "ai";
+import { generateObject, generateText, tool } from "ai";
+import { load } from "cheerio";
 import { z } from "zod";
 import { appConfig } from "@/config/app-config";
 import type { WorkflowLlmStep, WorkflowModelKey } from "@/shared/dsl";
@@ -36,18 +37,29 @@ const webSearchTool = tool({
     query: z.string().min(3)
   }),
   execute: async ({ query }) => {
-    const response = await fetch(`https://openrouter.ai/api/v1/web-search?query=${encodeURIComponent(query)}`, {
-      headers: {
-        Authorization: `Bearer ${appConfig.openRouter.apiKey}`
-      }
-    });
+    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
 
     if (!response.ok) {
       throw new Error(`Web search failed with status ${response.status}`);
     }
 
-    const payload = (await response.json()) as unknown;
-    return webSearchResultSchema.parse(payload);
+    const html = await response.text();
+    const document = load(html);
+    const results = document(".result")
+      .slice(0, 5)
+      .map((_index, element) => {
+        const anchor = document(element).find(".result__a").first();
+        const snippet = document(element).find(".result__snippet").first().text().trim();
+
+        return {
+          title: anchor.text().trim(),
+          url: anchor.attr("href") ?? "",
+          snippet
+        };
+      })
+      .get();
+
+    return webSearchResultSchema.parse({ results });
   }
 });
 
@@ -62,14 +74,14 @@ export const openRouterService = {
       return typeof value === "string" ? value : JSON.stringify(value ?? "");
     });
 
-    const response = await generateObject({
+    const response = await generateText({
       model: modelForKey(input.step.model),
-      schema: createOutputSchema(input.step),
       prompt: `${prompt}\n\nContext:\n${JSON.stringify(input.contextData, null, 2)}`,
       tools: input.step.tools?.includes("web_search") ? { web_search: webSearchTool } : undefined
     });
 
-    return response.object;
+    const parsed = createOutputSchema(input.step).parse(JSON.parse(response.text));
+    return parsed as Record<string, unknown>;
   },
 
   async editDsl(input: {

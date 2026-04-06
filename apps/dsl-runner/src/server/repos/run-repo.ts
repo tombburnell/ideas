@@ -1,6 +1,10 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { serializeRunDetail, serializeStep } from "@/server/db/serializers";
 import type { WorkflowRunDetail, WorkflowStepRecord } from "@/shared/dsl";
+
+const toJsonValue = (value: Record<string, unknown> | Record<string, string>): Prisma.InputJsonValue =>
+  value as Prisma.InputJsonValue;
 
 export const runRepo = {
   async create(input: {
@@ -12,8 +16,8 @@ export const runRepo = {
       data: {
         workflowId: input.workflowRecordId,
         status: "pending",
-        formData: input.formData,
-        contextData: input.contextData
+        formData: toJsonValue(input.formData),
+        contextData: toJsonValue(input.contextData)
       }
     });
 
@@ -59,7 +63,7 @@ export const runRepo = {
       },
       data: {
         status: input.status,
-        contextData: input.contextData,
+        contextData: input.contextData ? toJsonValue(input.contextData) : undefined,
         errorMessage: input.errorMessage,
         completedAt: input.completedAt
       }
@@ -80,8 +84,8 @@ export const runRepo = {
         stepType: input.stepType,
         status: "running",
         orderIndex: input.orderIndex,
-        inputData: input.inputData,
-        outputData: {},
+        inputData: toJsonValue(input.inputData),
+        outputData: toJsonValue({}),
         startedAt: new Date()
       }
     });
@@ -99,7 +103,7 @@ export const runRepo = {
       },
       data: {
         status: "completed",
-        outputData: input.outputData,
+        outputData: toJsonValue(input.outputData),
         completedAt: new Date()
       }
     });

@@ -7,7 +7,7 @@ interface ChatEditorPanelProps {
   onSubmit: (instruction: string) => Promise<void>;
 }
 
-export const ChatEditorPanel = ({ isPending, onSubmit }: ChatEditorPanelProps): JSX.Element => {
+export const ChatEditorPanel = ({ isPending, onSubmit }: ChatEditorPanelProps): React.ReactElement => {
   const [instruction, setInstruction] = useState("");
 
   return (

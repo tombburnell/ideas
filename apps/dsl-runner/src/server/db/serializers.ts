@@ -1,5 +1,5 @@
 import { parseDocument } from "yaml";
-import type { Prompt, Workflow, WorkflowRun, WorkflowStep } from "@prisma/client";
+import type { Prompt, Workflow, WorkflowRun, WorkflowStep } from "@/generated/prisma/client";
 import type {
   PromptRecord,
   WorkflowDslDefinition,

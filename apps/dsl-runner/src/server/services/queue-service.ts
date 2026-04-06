@@ -1,8 +1,8 @@
 import { Queue } from "bullmq";
-import IORedis from "ioredis";
+import Redis from "ioredis";
 import { appConfig } from "@/config/app-config";
 
-const connection = new IORedis({
+const connection = new Redis({
   host: appConfig.redis.host,
   port: appConfig.redis.port,
   maxRetriesPerRequest: null
