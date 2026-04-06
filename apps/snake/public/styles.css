@@ -104,6 +104,50 @@ body {
   border: 2px inset var(--dim);
 }
 
+.controls {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--dim);
+}
+
+.controls-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: var(--amber);
+  letter-spacing: 0.12em;
+}
+
+.controls-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: var(--green);
+}
+
+.controls-list li {
+  margin: 0.15rem 0;
+}
+
+.controls-list .key {
+  display: inline-block;
+  min-width: 1.35rem;
+  margin-right: 0.2rem;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--dim);
+  background: #020804;
+  color: var(--green);
+  text-align: center;
+  font-size: 0.72rem;
+}
+
+.controls-list .key + .key {
+  margin-left: 0.15rem;
+  margin-right: 0.2rem;
+}
+
 .name-row {
   display: flex;
   flex-wrap: wrap;
