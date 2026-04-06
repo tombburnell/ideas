@@ -9,6 +9,9 @@ import * as schema from "./schema.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function defaultDbUrl(): string {
+  if (process.env.FLY_APP_NAME) {
+    return "file:/data/snake.db";
+  }
   return "file:data/snake.db";
 }
 

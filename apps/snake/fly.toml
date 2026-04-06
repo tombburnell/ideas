@@ -1,9 +1,6 @@
 app = "snake-idea"
 primary_region = "lhr"
 
-[env]
-  DATABASE_URL = "file:/data/snake.db"
-
 [mounts]
   source = "snake_data"
   destination = "/data"
