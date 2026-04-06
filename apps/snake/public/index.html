@@ -18,14 +18,17 @@
             <span id="score">SCORE 0000</span>
             <span id="status" class="blink">READY</span>
           </div>
-          <canvas id="game" width="400" height="400" aria-label="Snake game"></canvas>
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="game" width="400" height="400" aria-label="Snake game"></canvas>
+          </div>
           <div class="controls" aria-label="Keyboard controls">
             <h3 class="controls-title">CONTROLS</h3>
             <ul class="controls-list">
               <li><span class="key">↑</span><span class="key">↓</span><span class="key">←</span><span class="key">→</span> Move</li>
               <li><span class="key">P</span> Pause / resume</li>
               <li><span class="key">R</span> Restart</li>
-              <li><span class="key">Click</span> board to start</li>
+              <li><span class="key">Tap</span> board to start (desktop: click)</li>
+              <li class="controls-mobile-note">On phone: big <span class="key">←</span><span class="key">→</span> at bottom + up/down above</li>
               <li>After game over: enter name → <span class="key">SUBMIT</span> score</li>
             </ul>
           </div>
@@ -39,6 +42,24 @@
               autocomplete="off"
             />
             <button type="button" id="submitScore" disabled>SUBMIT</button>
+          </div>
+          <div class="touch-pad" id="touchPad" aria-label="Touch controls">
+            <div class="touch-row touch-row-ud">
+              <button type="button" class="touch-btn touch-btn-small" data-dir="up" aria-label="Move up">↑</button>
+              <button type="button" class="touch-btn touch-btn-small" data-dir="down" aria-label="Move down">↓</button>
+            </div>
+            <div class="touch-row touch-row-extras">
+              <button type="button" class="touch-btn touch-btn-small" id="touchPause" aria-label="Pause or resume">
+                ‖
+              </button>
+              <button type="button" class="touch-btn touch-btn-small" id="touchRestart" aria-label="Restart game">
+                ↺
+              </button>
+            </div>
+            <div class="touch-row touch-row-lr">
+              <button type="button" class="touch-btn touch-btn-lr" data-dir="left" aria-label="Move left">←</button>
+              <button type="button" class="touch-btn touch-btn-lr" data-dir="right" aria-label="Move right">→</button>
+            </div>
           </div>
         </section>
         <section class="panel scores-panel">

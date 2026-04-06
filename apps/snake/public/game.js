@@ -1,8 +1,8 @@
 const GRID = 20;
-const CELL = 400 / GRID;
 const TICK_MS = 110;
 
 const canvas = document.getElementById("game");
+const canvasWrap = document.getElementById("canvasWrap");
 const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const statusEl = document.getElementById("status");
@@ -10,6 +10,23 @@ const nameInput = document.getElementById("playerName");
 const submitBtn = document.getElementById("submitScore");
 const leaderboardEl = document.getElementById("leaderboard");
 const scoresErrorEl = document.getElementById("scoresError");
+const touchPause = document.getElementById("touchPause");
+const touchRestart = document.getElementById("touchRestart");
+
+let cell = 20;
+
+function layoutCanvas() {
+  if (!canvasWrap) return;
+  const d = Math.min(canvasWrap.clientWidth, canvasWrap.clientHeight);
+  let size = Math.floor(d / GRID) * GRID;
+  if (size < GRID * 10) size = GRID * 10;
+  if (size !== canvas.width) {
+    canvas.width = size;
+    canvas.height = size;
+    cell = size / GRID;
+    draw();
+  }
+}
 
 let snake = [];
 let dir = { x: 1, y: 0 };
@@ -74,21 +91,21 @@ function draw() {
   ctx.lineWidth = 1;
   for (let i = 0; i <= GRID; i++) {
     ctx.beginPath();
-    ctx.moveTo(i * CELL, 0);
-    ctx.lineTo(i * CELL, canvas.height);
+    ctx.moveTo(i * cell, 0);
+    ctx.lineTo(i * cell, canvas.height);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(0, i * CELL);
-    ctx.lineTo(canvas.width, i * CELL);
+    ctx.moveTo(0, i * cell);
+    ctx.lineTo(canvas.width, i * cell);
     ctx.stroke();
   }
 
   ctx.fillStyle = "#ff3355";
-  ctx.fillRect(food.x * CELL + 1, food.y * CELL + 1, CELL - 2, CELL - 2);
+  ctx.fillRect(food.x * cell + 1, food.y * cell + 1, cell - 2, cell - 2);
 
   snake.forEach((seg, i) => {
     ctx.fillStyle = i === 0 ? "#66ff88" : "#33ff66";
-    ctx.fillRect(seg.x * CELL + 1, seg.y * CELL + 1, CELL - 2, CELL - 2);
+    ctx.fillRect(seg.x * cell + 1, seg.y * cell + 1, cell - 2, cell - 2);
   });
 }
 
@@ -141,19 +158,25 @@ function togglePause() {
   updateHud();
 }
 
+function trySetDir(nx, ny) {
+  if (nx === 0 && ny === -1 && dir.y !== 0) return;
+  if (nx === 0 && ny === 1 && dir.y !== 0) return;
+  if (nx === -1 && ny === 0 && dir.x !== 0) return;
+  if (nx === 1 && ny === 0 && dir.x !== 0) return;
+  nextDir = { x: nx, y: ny };
+  if (!running && !gameOver) start();
+}
+
 document.addEventListener("keydown", (e) => {
   const k = e.key;
-  if (k === "ArrowUp" && dir.y === 0) nextDir = { x: 0, y: -1 };
-  else if (k === "ArrowDown" && dir.y === 0) nextDir = { x: 0, y: 1 };
-  else if (k === "ArrowLeft" && dir.x === 0) nextDir = { x: -1, y: 0 };
-  else if (k === "ArrowRight" && dir.x === 0) nextDir = { x: 1, y: 0 };
+  if (k === "ArrowUp") trySetDir(0, -1);
+  else if (k === "ArrowDown") trySetDir(0, 1);
+  else if (k === "ArrowLeft") trySetDir(-1, 0);
+  else if (k === "ArrowRight") trySetDir(1, 0);
   else if (k === "p" || k === "P") togglePause();
   else if (k === "r" || k === "R") reset();
   else return;
   e.preventDefault();
-  if (!running && !gameOver && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(k)) {
-    start();
-  }
 });
 
 submitBtn.addEventListener("click", async () => {
@@ -212,6 +235,32 @@ function escapeHtml(s) {
 canvas.addEventListener("click", () => {
   if (!running) start();
 });
+
+document.querySelectorAll(".touch-btn[data-dir]").forEach((btn) => {
+  btn.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    const d = btn.getAttribute("data-dir");
+    if (d === "up") trySetDir(0, -1);
+    else if (d === "down") trySetDir(0, 1);
+    else if (d === "left") trySetDir(-1, 0);
+    else if (d === "right") trySetDir(1, 0);
+  });
+});
+
+touchPause?.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  togglePause();
+});
+
+touchRestart?.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  reset();
+});
+
+const ro = new ResizeObserver(() => layoutCanvas());
+if (canvasWrap) ro.observe(canvasWrap);
+window.addEventListener("load", layoutCanvas);
+layoutCanvas();
 
 reset();
 loadScores();
