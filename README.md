@@ -51,6 +51,7 @@ Each app is automatically deployed to Fly.io when changes are detected:
 ### Tech Stack Freedom
 
 Each app can use any technology stack:
+
 - Node.js (Express, Next.js, etc.)
 - Python (Flask, Django, FastAPI)
 - Go, Rust, Ruby, etc.
@@ -63,8 +64,9 @@ The only requirement is a `fly.toml` configuration file.
 ### Example Apps
 
 - **[hello-node](./apps/hello-node)** - Simple Express.js app
-- **[hello-python](./apps/hello-python)** - Simple Flask app  
+- **[hello-python](./apps/hello-python)** - Simple Flask app
 - **[hello-static](./apps/hello-static)** - Static HTML site
+- **[snake](./apps/snake)** - Retro Snake web game with PostgreSQL high scores
 
 <!-- Add your own apps here as you create them -->
 
@@ -83,34 +85,40 @@ Each app is independent. Navigate to the app folder and follow its README for lo
 ## What to Think About
 
 ### Monorepo Structure ✅
+
 - Each app is isolated in `apps/` directory
 - Shared resources in `.github/` (workflows, templates)
 - Clear documentation at root level
 
 ### Deployment Strategy ✅
+
 - **Selective deployment**: Only changed apps deploy
 - **Automatic**: Push to main → auto-deploy
 - **Manual override**: Deploy specific apps via GitHub Actions
 - **Independent failures**: One app failing doesn't affect others
 
 ### Fly.io Integration ✅
+
 - Each app has own `fly.toml` config
 - Dockerfiles for containerization
 - Templates for common stacks
 - Auto-start/stop for cost optimization
 
 ### Cost Management
+
 - Free tier: 3 shared VMs with 256MB each
 - Auto-stop unused apps to stay within free tier
 - Easy to scale up specific apps as needed
 - Monitor usage with `fly billing show`
 
 ### Tech Stack Freedom
+
 - Each app can use different technologies
 - No shared dependencies between apps
 - Pick the right tool for each idea
 
 ### Future Considerations
+
 - **Shared libraries**: Add `/packages` for shared code if needed
 - **Databases**: Use Fly Postgres or external providers
 - **CDN**: Add Cloudflare for static assets
