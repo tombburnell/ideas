@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server/index.ts",
-    "build": "prisma generate && next build && tsc -p tsconfig.server.json && tsc-alias -p tsconfig.server.json",
-    "start": "prisma migrate deploy && node dist/server/index.js",
+    "build": "prisma generate && next build && tsc -p tsconfig.server.json && tsc-alias -p tsconfig.server.json --resolve-full-paths --resolve-full-extension .js",
+    "start": "prisma migrate deploy && node --experimental-specifier-resolution=node dist/server/index.js",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate"
