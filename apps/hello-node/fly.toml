@@ -1,4 +1,4 @@
-app = "hello-node-ideas"
+app = "hello-node-idea"
 primary_region = "ord"
 
 [build]

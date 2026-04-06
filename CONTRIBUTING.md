@@ -56,7 +56,7 @@ apps/your-app-name/
 ## Naming Conventions
 
 - **Folder names**: Use kebab-case (e.g., `my-cool-app`)
-- **App names in fly.toml**: Use unique names (e.g., `my-cool-app-ideas`)
+- **App names in fly.toml**: Use unique names (e.g., `my-cool-app-idea`)
 - **Branches**: Use descriptive names (e.g., `add-my-cool-app`)
 
 ## Tech Stack Freedom
@@ -169,7 +169,7 @@ fly billing show
 
 **"App name taken"**
 - Change `app` in `fly.toml` to something unique
-- Try adding suffix: `my-app-ideas`, `my-app-tb`, etc.
+- Try adding suffix: `my-app-idea`, `my-app-tb`, etc.
 
 **"Dockerfile not found"**
 - Ensure `Dockerfile` exists in app root

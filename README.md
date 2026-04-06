@@ -44,7 +44,7 @@ Each app is automatically deployed to Fly.io when changes are detected:
    - Value: Paste your token
    - Click "Add secret"
 
-**Note:** Apps are automatically created on first deployment. Just ensure your app names in `fly.toml` are unique!
+**Note:** Apps are automatically created on first deployment. Use the `-idea` suffix in `app = "my-app-idea"` so names stay unique on Fly.io.
 
 ### Tech Stack Freedom
 
@@ -76,6 +76,7 @@ Each app is independent. Navigate to the app folder and follow its README for lo
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide and best practices
 - **[CONTRIBUTING.md](./CONTRIBUTING.md)** - How to add new apps to this monorepo
 - **[Fly.io Templates](./.github/fly-templates/)** - Configuration templates for different stacks
+- **[Create-idea workflow](./docs/CREATE_IDEA_WORKFLOW.md)** - `/create-idea` slash command, skill, and PR flow
 
 ## What to Think About
 

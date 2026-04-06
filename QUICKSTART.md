@@ -80,7 +80,7 @@ EOF
 cp ../../.github/fly-templates/node-template.toml fly.toml
 
 # Edit fly.toml - change app name to something unique
-# Example: my-first-app-ideas
+# Example: my-first-app-idea
 ```
 
 ### 5. Deploy
@@ -123,7 +123,7 @@ fly scale memory 512 -a your-app-name
 
 ## Tips
 
-- **App names must be globally unique** - add a suffix like `-ideas`
+- **App names must be globally unique** - add a suffix like `-idea`
 - **Free tier**: 3 VMs with 256MB each, auto-stop when idle
 - **Port must match**: `internal_port` in fly.toml = port your app listens on
 - **Listen on 0.0.0.0**, not localhost

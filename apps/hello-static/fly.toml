@@ -1,4 +1,4 @@
-app = "hello-static-ideas"
+app = "hello-static-idea"
 primary_region = "ord"
 
 [build]

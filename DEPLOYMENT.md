@@ -83,7 +83,7 @@ cp ../../.github/fly-templates/node-template.toml fly.toml
 ```
 
 Edit `fly.toml`:
-- Change `app` to a unique name (e.g., `my-new-app-ideas`)
+- Change `app` to a unique name (e.g., `my-new-app-idea`)
 - Adjust `internal_port` if needed
 - Set your preferred `primary_region`
 
