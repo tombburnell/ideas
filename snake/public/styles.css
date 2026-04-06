@@ -1,0 +1,171 @@
+:root {
+  --bg: #0a0f0a;
+  --green: #33ff66;
+  --dim: #1a3d28;
+  --amber: #ffcc00;
+  --red: #ff3355;
+  --font: "Courier New", Courier, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--green);
+  font-family: var(--font);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+.crt {
+  min-height: 100vh;
+  padding: 1.5rem;
+  background: radial-gradient(ellipse at center, #0d1a12 0%, #050805 70%);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  text-shadow: 0 0 12px var(--green), 0 0 24px rgba(51, 255, 102, 0.4);
+  color: var(--green);
+}
+
+.sub {
+  margin: 0.5rem 0 0;
+  color: var(--dim);
+  font-size: 0.85rem;
+}
+
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: flex-start;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.panel {
+  border: 2px solid var(--green);
+  box-shadow: 0 0 0 1px var(--dim), 0 0 20px rgba(51, 255, 102, 0.15);
+  padding: 1rem;
+  background: rgba(0, 20, 8, 0.6);
+}
+
+.game-panel {
+  flex: 0 0 auto;
+}
+
+.scores-panel {
+  flex: 1 1 240px;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.scores-panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: var(--amber);
+  text-shadow: 0 0 8px rgba(255, 204, 0, 0.35);
+}
+
+.hud {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+}
+
+#status.blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+#game {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #020804;
+  border: 2px inset var(--dim);
+}
+
+.name-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.name-row label {
+  flex: 0 0 auto;
+}
+
+.name-row input {
+  flex: 1 1 120px;
+  min-width: 100px;
+  background: #020804;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: inherit;
+  padding: 0.35rem 0.5rem;
+}
+
+.name-row input:focus {
+  outline: none;
+  box-shadow: 0 0 8px var(--green);
+}
+
+.name-row button {
+  font-family: inherit;
+  background: var(--green);
+  color: #020804;
+  border: none;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.name-row button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.leaderboard {
+  margin: 0;
+  padding-left: 1.25rem;
+  line-height: 1.6;
+}
+
+.leaderboard li {
+  color: var(--green);
+}
+
+.leaderboard .me {
+  color: var(--amber);
+}
+
+.error {
+  color: var(--red);
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+.hidden {
+  display: none;
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Retro Snake — High Scores</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="crt">
+      <header class="header">
+        <h1>SNAKE</h1>
+        <p class="sub">Use arrow keys · P pause · R restart</p>
+      </header>
+      <main class="layout">
+        <section class="panel game-panel">
+          <div class="hud">
+            <span id="score">SCORE 0000</span>
+            <span id="status" class="blink">READY</span>
+          </div>
+          <canvas id="game" width="400" height="400" aria-label="Snake game"></canvas>
+          <div class="name-row">
+            <label for="playerName">NAME</label>
+            <input
+              id="playerName"
+              type="text"
+              maxlength="32"
+              placeholder="AAA"
+              autocomplete="off"
+            />
+            <button type="button" id="submitScore" disabled>SUBMIT</button>
+          </div>
+        </section>
+        <section class="panel scores-panel">
+          <h2>HIGH SCORES</h2>
+          <ol id="leaderboard" class="leaderboard"></ol>
+          <p id="scoresError" class="error hidden"></p>
+        </section>
+      </main>
+    </div>
+    <script src="/game.js" type="module"></script>
+  </body>
+</html>
