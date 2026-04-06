@@ -1,8 +1,10 @@
 import "dotenv/config";
+import { asc, desc } from "drizzle-orm";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getPool, initDb } from "./db.js";
+import { getDb, initDb } from "./db.js";
+import { highScores } from "./schema.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -18,25 +20,18 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/scores", async (_req, res) => {
   try {
-    const pool = getPool();
-    const { rows } = await pool.query<{
-      id: number;
-      player_name: string;
-      score: number;
-      created_at: string;
-    }>(
-      `SELECT id, player_name, score, created_at
-       FROM high_scores
-       ORDER BY score DESC, created_at ASC
-       LIMIT $1`,
-      [LEADERBOARD_LIMIT]
-    );
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(highScores)
+      .orderBy(desc(highScores.score), asc(highScores.createdAt))
+      .limit(LEADERBOARD_LIMIT);
     res.json({
       scores: rows.map((r) => ({
         id: r.id,
-        playerName: r.player_name,
+        playerName: r.playerName,
         score: r.score,
-        createdAt: r.created_at,
+        createdAt: r.createdAt,
       })),
     });
   } catch (e) {
@@ -64,19 +59,16 @@ app.post("/api/scores", async (req, res) => {
       return;
     }
 
-    const pool = getPool();
-    const { rows } = await pool.query<{ id: number; created_at: string }>(
-      `INSERT INTO high_scores (player_name, score)
-       VALUES ($1, $2)
-       RETURNING id, created_at`,
-      [name, score]
-    );
-    const row = rows[0];
+    const db = getDb();
+    const [row] = await db
+      .insert(highScores)
+      .values({ playerName: name, score })
+      .returning({ id: highScores.id, createdAt: highScores.createdAt });
     res.status(201).json({
       id: row.id,
       playerName: name,
       score,
-      createdAt: row.created_at,
+      createdAt: row.createdAt,
     });
   } catch (e) {
     console.error(e);
