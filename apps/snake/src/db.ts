@@ -1,32 +1,40 @@
-import pg from "pg";
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
+import { migrate } from "drizzle-orm/libsql/migrator";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import * as schema from "./schema.js";
 
-const { Pool } = pg;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-let pool: pg.Pool | null = null;
+function defaultDbUrl(): string {
+  return "file:data/snake.db";
+}
 
-export function getPool(): pg.Pool {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    throw new Error("DATABASE_URL is not set");
+function ensureFileParentDir(url: string): void {
+  if (!url.startsWith("file:")) return;
+  const rest = url.slice("file:".length);
+  const abs = path.isAbsolute(rest) ? rest : path.join(process.cwd(), rest);
+  const dir = path.dirname(abs);
+  fs.mkdirSync(dir, { recursive: true });
+}
+
+let client: ReturnType<typeof createClient> | null = null;
+let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
+
+export function getDb() {
+  const url = process.env.DATABASE_URL?.trim() || defaultDbUrl();
+  ensureFileParentDir(url);
+  if (!client) {
+    client = createClient({ url });
+    dbInstance = drizzle(client, { schema });
   }
-  if (!pool) {
-    pool = new Pool({ connectionString: url });
-  }
-  return pool;
+  return dbInstance!;
 }
 
 export async function initDb(): Promise<void> {
-  const p = getPool();
-  await p.query(`
-    CREATE TABLE IF NOT EXISTS high_scores (
-      id SERIAL PRIMARY KEY,
-      player_name VARCHAR(32) NOT NULL,
-      score INTEGER NOT NULL CHECK (score >= 0),
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-  `);
-  await p.query(`
-    CREATE INDEX IF NOT EXISTS idx_high_scores_score_created
-    ON high_scores (score DESC, created_at ASC);
-  `);
+  getDb();
+  const migrationsFolder = path.join(__dirname, "..", "drizzle");
+  await migrate(getDb(), { migrationsFolder });
 }

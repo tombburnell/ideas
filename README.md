@@ -66,7 +66,7 @@ The only requirement is a `fly.toml` configuration file.
 - **[hello-node](./apps/hello-node)** - Simple Express.js app
 - **[hello-python](./apps/hello-python)** - Simple Flask app
 - **[hello-static](./apps/hello-static)** - Static HTML site
-- **[snake](./apps/snake)** - Retro Snake web game with PostgreSQL high scores
+- **[snake](./apps/snake)** - Retro Snake web game with SQLite (Drizzle + libSQL) high scores
 
 <!-- Add your own apps here as you create them -->
 
