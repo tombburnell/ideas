@@ -11,16 +11,14 @@ This folder contains templates for common application types. Copy the appropriat
 ## Usage
 
 1. Copy the appropriate template to your app folder:
-   ```bash
+  ```bash
    cp .github/fly-templates/node-template.toml apps/my-app/fly.toml
-   ```
-
+  ```
 2. Edit `fly.toml` and change:
-   - `app` - Must be globally unique across all Fly.io apps
-   - `primary_region` - Choose closest to your users ([regions list](https://fly.io/docs/reference/regions/))
-   - `internal_port` - Match your app's port
-   - `memory_mb` - Based on your needs (256, 512, 1024, 2048)
-
+  - `app` - Must be globally unique across all Fly.io apps
+  - `primary_region` - Choose closest to your users ([regions list](https://fly.io/docs/reference/regions/))
+  - `internal_port` - Match your app's port
+  - `memory_mb` - Based on your needs (256, 512, 1024, 2048)
 3. Create a Dockerfile in your app folder if needed
 
 ## Common Regions
@@ -48,3 +46,4 @@ fly apps create your-app-name  # Just creates the app
 - [Fly.io Documentation](https://fly.io/docs/)
 - [Fly.io Pricing](https://fly.io/docs/about/pricing/)
 - [Fly.io Regions](https://fly.io/docs/reference/regions/)
+
