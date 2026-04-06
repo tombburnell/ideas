@@ -187,7 +187,8 @@ body.modal-open {
   padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
-@media (max-width: 719px) {
+/* Show on phones and tablets (iPad portrait is often >719px wide — was hiding these controls) */
+@media (max-width: 1023px), (pointer: coarse) {
   .touch-lr-row {
     display: flex;
   }
@@ -433,13 +434,13 @@ body.modal-open {
   border-top: 1px solid var(--dim);
 }
 
-@media (max-width: 719px) {
+@media (max-width: 1023px), (pointer: coarse) {
   .touch-secondary {
     display: block;
   }
 }
 
-@media (min-width: 720px) {
+@media (min-width: 1024px) and (pointer: fine) {
   .touch-secondary {
     display: none !important;
   }

@@ -267,12 +267,6 @@ function togglePause() {
 }
 
 function trySetDir(nx, ny) {
-  if (!running) {
-    nextDir = { x: nx, y: ny };
-    return;
-  }
-  // Only block 180° into the segment behind the head (not "any horizontal while moving horizontally")
-  if (nx === -dir.x && ny === -dir.y) return;
   nextDir = { x: nx, y: ny };
 }
 
@@ -362,9 +356,21 @@ function applyDirFromButton(btn) {
   else if (d === "right") trySetDir(1, 0);
 }
 
-document.querySelectorAll(".touch-btn[data-dir]").forEach((btn) => {
-  btn.addEventListener("click", () => applyDirFromButton(btn));
-});
+const touchPadLr = document.getElementById("touchPadLr");
+const touchPadSecondary = document.getElementById("touchPadSecondary");
+
+function bindDirDelegation(root) {
+  if (!root) return;
+  root.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-dir]");
+    if (!btn || !root.contains(btn)) return;
+    e.preventDefault();
+    applyDirFromButton(btn);
+  });
+}
+
+bindDirDelegation(touchPadLr);
+bindDirDelegation(touchPadSecondary);
 
 touchPause?.addEventListener("click", () => togglePause());
 touchRestart?.addEventListener("click", () => reset());
