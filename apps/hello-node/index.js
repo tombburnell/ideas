@@ -36,6 +36,7 @@ app.get('/', (req, res) => {
         <div class="container">
           <h1>Hello from Node.js!</h1>
           <p>This is a simple Express app deployed from a monorepo</p>
+          <p style="font-size:0.9rem;opacity:0.75">Redeploy: ${new Date().toISOString().slice(0, 10)}</p>
         </div>
       </body>
     </html>
