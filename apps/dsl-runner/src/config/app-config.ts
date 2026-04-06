@@ -39,9 +39,9 @@ export const appConfig = {
     apiKey: parsedEnv.OPENROUTER_API_KEY,
     baseUrl: parsedEnv.OPENROUTER_BASE_URL,
     models: {
-      fast: "openai/gpt-4.1-mini",
-      smart: "anthropic/claude-3.5-sonnet",
-      reasoning: "openai/gpt-5"
+      fast: "openai/gpt-5-nano",
+      smart: "qwen/qwen3.5-9b",
+      reasoning: "qwen/qwen3.5-27b"
     }
   },
   ui: {

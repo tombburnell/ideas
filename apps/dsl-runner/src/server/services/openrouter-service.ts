@@ -1,5 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { generateObject, generateText, tool } from "ai";
+import { generateObject } from "ai";
 import { load } from "cheerio";
 import { z } from "zod";
 import { appConfig } from "@/config/app-config";
@@ -31,48 +31,44 @@ const createOutputSchema = (step: WorkflowLlmStep): z.ZodObject<Record<string, z
 
 const modelForKey = (modelKey: WorkflowModelKey) => openrouter(appConfig.openRouter.models[modelKey]);
 
-const stripCodeFences = (value: string): string => {
-  const trimmed = value.trim();
-  const fencedMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-
-  if (fencedMatch) {
-    return fencedMatch[1].trim();
-  }
-
-  return trimmed;
+const buildSchemaInstruction = (step: WorkflowLlmStep): string => {
+  const fields = Object.entries(step.output).map(([key, valueType]) => `${key}: ${valueType}`);
+  return `Return exactly one JSON object with these fields and types: ${fields.join(", ")}. Do not include extra keys.`;
 };
 
-const webSearchTool = tool({
-  description: "Search the web for current information related to the workflow prompt.",
-  inputSchema: z.object({
-    query: z.string().min(3)
-  }),
-  execute: async ({ query }) => {
-    const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
+const runWebSearch = async (query: string): Promise<z.infer<typeof webSearchResultSchema>> => {
+  const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
 
-    if (!response.ok) {
-      throw new Error(`Web search failed with status ${response.status}`);
-    }
-
-    const html = await response.text();
-    const document = load(html);
-    const results = document(".result")
-      .slice(0, 5)
-      .map((_index, element) => {
-        const anchor = document(element).find(".result__a").first();
-        const snippet = document(element).find(".result__snippet").first().text().trim();
-
-        return {
-          title: anchor.text().trim(),
-          url: anchor.attr("href") ?? "",
-          snippet
-        };
-      })
-      .get();
-
-    return webSearchResultSchema.parse({ results });
+  if (!response.ok) {
+    throw new Error(`Web search failed with status ${response.status}`);
   }
-});
+
+  const html = await response.text();
+  const document = load(html);
+  const results = document(".result")
+    .slice(0, 5)
+    .map((_index, element) => {
+      const anchor = document(element).find(".result__a").first();
+      const snippet = document(element).find(".result__snippet").first().text().trim();
+
+      return {
+        title: anchor.text().trim(),
+        url: anchor.attr("href") ?? "",
+        snippet
+      };
+    })
+    .get();
+
+  return webSearchResultSchema.parse({ results });
+};
+
+const buildSearchQuery = (contextData: Record<string, unknown>, prompt: string): string => {
+  const topic = typeof contextData.topic === "string" ? contextData.topic : "";
+  const audience = typeof contextData.audience === "string" ? contextData.audience : "";
+  const query = `${topic} ${audience}`.trim();
+
+  return query.length > 0 ? query : prompt;
+};
 
 export const openRouterService = {
   async executeWorkflowStep(input: {
@@ -85,48 +81,73 @@ export const openRouterService = {
       const value = input.contextData[key.trim()];
       return typeof value === "string" ? value : JSON.stringify(value ?? "");
     });
+    const outputSchema = createOutputSchema(input.step);
+    const schemaInstruction = buildSchemaInstruction(input.step);
+    let enrichedContext = input.contextData;
 
     console.info(
       `[workflow] llm request step=${input.step.id} prompt=${input.promptId} model=${input.step.model} tools=${input.step.tools?.join(",") ?? "none"}`
     );
 
-    const response = await generateText({
+    if (input.step.tools?.includes("web_search")) {
+      const query = buildSearchQuery(input.contextData, prompt);
+      const searchResults = await runWebSearch(query);
+      enrichedContext = {
+        ...input.contextData,
+        web_search_results: searchResults.results
+      };
+
+      console.info(
+        `[workflow] web search step=${input.step.id} query=${JSON.stringify(query)} results=${JSON.stringify(searchResults.results)}`
+      );
+    }
+
+    const response = await generateObject({
       model: modelForKey(input.step.model),
-      prompt: `${prompt}\n\nContext:\n${JSON.stringify(input.contextData, null, 2)}`,
-      tools: input.step.tools?.includes("web_search") ? { web_search: webSearchTool } : undefined
+      schema: outputSchema,
+      prompt: [
+        prompt,
+        schemaInstruction,
+        "Use the provided context and keep field names exact.",
+        `Context:\n${JSON.stringify(enrichedContext, null, 2)}`
+      ].join("\n\n")
     });
 
-    const sanitizedText = stripCodeFences(response.text);
+    console.info(`[workflow] llm parsed response step=${input.step.id} output=${JSON.stringify(response.object)}`);
 
-    console.info(`[workflow] llm raw response step=${input.step.id} text=${JSON.stringify(response.text)}`);
-
-    const parsed = createOutputSchema(input.step).parse(JSON.parse(sanitizedText));
-
-    console.info(`[workflow] llm parsed response step=${input.step.id} output=${JSON.stringify(parsed)}`);
-
-    return parsed as Record<string, unknown>;
+    return response.object as Record<string, unknown>;
   },
 
   async editDsl(input: {
     dsl: string;
     instruction: string;
   }): Promise<string> {
-    const response = await generateObject({
-      model: modelForKey("smart"),
-      schema: z.object({
-        dsl: z.string().min(1)
-      }),
-      prompt: [
-        "You edit workflow DSL written as YAML.",
-        "Return only valid YAML in the dsl field.",
-        "Do not add commentary.",
-        "Instruction:",
-        input.instruction,
-        "Current DSL:",
-        input.dsl
-      ].join("\n")
-    });
+    console.info(`[chat] edit request model=smart instruction=${JSON.stringify(input.instruction)}`);
 
-    return response.object.dsl;
+    try {
+      const response = await generateObject({
+        model: modelForKey("smart"),
+        schema: z.object({
+          dsl: z.string().min(1)
+        }),
+        prompt: [
+          "You edit workflow DSL written as YAML.",
+          "Return only valid YAML in the dsl field.",
+          "Do not add commentary.",
+          "Instruction:",
+          input.instruction,
+          "Current DSL:",
+          input.dsl
+        ].join("\n")
+      });
+
+      console.info(`[chat] edit response model=smart dslLength=${response.object.dsl.length}`);
+
+      return response.object.dsl;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Chat edit failed";
+      console.error(`[chat] edit failure model=smart error=${message}`);
+      throw error;
+    }
   }
 };
