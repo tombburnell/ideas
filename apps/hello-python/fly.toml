@@ -1,4 +1,4 @@
-app = "hello-python-ideas"
+app = "hello-python-ideas-tb"
 primary_region = "ord"
 
 [build]

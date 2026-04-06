@@ -36,9 +36,15 @@ Each app is automatically deployed to Fly.io when changes are detected:
 
 1. Install Fly CLI: `curl -L https://fly.io/install.sh | sh`
 2. Login: `fly auth login`
-3. Create app: `fly launch` (from within your app directory)
-4. Set secrets in GitHub:
-   - `FLY_API_TOKEN`: Your Fly.io API token (get with `fly auth token`)
+3. Get API token: `fly auth token`
+4. Add GitHub Secret:
+   - Go to your repo Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+   - Name: `FLY_API_TOKEN`
+   - Value: Paste your token
+   - Click "Add secret"
+
+**Note:** Apps are automatically created on first deployment. Just ensure your app names in `fly.toml` are unique!
 
 ### Tech Stack Freedom
 
