@@ -1,0 +1,46 @@
+{
+  "name": "dsl-runner-idea",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server/index.ts",
+    "build": "prisma generate && next build && tsc -p tsconfig.server.json && tsc-alias -p tsconfig.server.json",
+    "start": "prisma db push && node dist/server/index.js",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate"
+  },
+  "dependencies": {
+    "@langchain/langgraph": "latest",
+    "@monaco-editor/react": "latest",
+    "@openrouter/ai-sdk-provider": "latest",
+    "@prisma/adapter-better-sqlite3": "^7.6.0",
+    "@prisma/client": "latest",
+    "@tanstack/react-query": "latest",
+    "ai": "latest",
+    "better-sqlite3": "^12.8.0",
+    "bullmq": "latest",
+    "cheerio": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "ioredis": "latest",
+    "next": "latest",
+    "prisma": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "yaml": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "latest",
+    "@types/express": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "tailwindcss": "latest",
+    "tsc-alias": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}
