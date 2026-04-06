@@ -104,6 +104,27 @@ jobs:
               exit 1
             }
           fi
+
+          # If fly.toml declares [mounts], ensure the volume exists in primary_region (e.g. SQLite on Fly)
+          if grep -q '^\[mounts\]' fly.toml; then
+            REGION=$(grep -E '^primary_region\s*=' fly.toml | head -1 | sed -E 's/^primary_region\s*=\s*"([^"]+)".*/\1/')
+            VOL=$(grep -A8 '^\[mounts\]' fly.toml | grep -E '^\s*source\s*=' | head -1 | sed -E 's/^\s*source\s*=\s*"([^"]+)".*/\1/')
+            if [ -n "$REGION" ] && [ -n "$VOL" ]; then
+              JSON=$(flyctl volumes list -a "$APP_NAME" --json 2>/dev/null) || JSON="[]"
+              COUNT=0
+              if [ -n "$JSON" ]; then
+                COUNT=$(echo "$JSON" | jq --arg vol "$VOL" --arg reg "$REGION" '[.[] | select(.name == $vol and .region == $reg)] | length' 2>/dev/null) || COUNT=0
+              fi
+              if [ "${COUNT:-0}" -eq 0 ]; then
+                echo "📀 Creating Fly volume '$VOL' in $REGION for app $APP_NAME..."
+                flyctl volumes create "$VOL" --region "$REGION" --size 1 --yes -a "$APP_NAME"
+              else
+                echo "📀 Volume '$VOL' already present in $REGION"
+              fi
+            else
+              echo "⚠️ Could not parse primary_region or [mounts] source from fly.toml; deploy may fail if volumes are missing."
+            fi
+          fi
           
           # Deploy the app
           flyctl deploy --remote-only --ha=false
