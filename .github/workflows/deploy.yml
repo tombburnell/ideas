@@ -1,0 +1,119 @@
+name: Deploy Apps to Fly.io
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: 'App to deploy (leave empty for all changed apps)'
+        required: false
+        type: string
+
+jobs:
+  detect-changes:
+    name: Detect Changed Apps
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.set-apps.outputs.apps }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed apps
+        id: set-apps
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.app_name }}" ]; then
+            # Manual deployment of specific app
+            echo "apps=[\"${{ inputs.app_name }}\"]" >> $GITHUB_OUTPUT
+          else
+            # Detect changed apps from git diff
+            if [ "${{ github.event_name }}" = "push" ]; then
+              CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+            else
+              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+            fi
+            
+            # Extract unique app names from changed files in apps/ directory
+            CHANGED_APPS=$(echo "$CHANGED_FILES" | grep '^apps/' | cut -d'/' -f2 | sort -u)
+            
+            # Convert to JSON array
+            if [ -z "$CHANGED_APPS" ]; then
+              echo "apps=[]" >> $GITHUB_OUTPUT
+            else
+              APPS_JSON=$(echo "$CHANGED_APPS" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+              echo "apps=$APPS_JSON" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Display detected apps
+        run: |
+          echo "Apps to deploy: ${{ steps.set-apps.outputs.apps }}"
+
+  deploy:
+    name: Deploy ${{ matrix.app }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.apps != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: ${{ fromJson(needs.detect-changes.outputs.apps) }}
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Check if fly.toml exists
+        id: check-config
+        run: |
+          if [ -f "apps/${{ matrix.app }}/fly.toml" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Warning: apps/${{ matrix.app }}/fly.toml not found. Skipping deployment."
+          fi
+
+      - name: Deploy to Fly.io
+        if: steps.check-config.outputs.exists == 'true'
+        working-directory: apps/${{ matrix.app }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "🚀 Deploying ${{ matrix.app }} to Fly.io..."
+          
+          # Extract app name from fly.toml
+          APP_NAME=$(grep "^app" fly.toml | cut -d'"' -f2 || echo "")
+          
+          if [ -z "$APP_NAME" ]; then
+            echo "❌ Error: Could not extract app name from fly.toml"
+            exit 1
+          fi
+          
+          # Check if app exists, create if it doesn't
+          if ! flyctl status -a "$APP_NAME" >/dev/null 2>&1; then
+            echo "📦 App '$APP_NAME' does not exist. Creating it..."
+            flyctl apps create "$APP_NAME" --yes || {
+              echo "⚠️ Could not create app. It may already exist or the name may be taken."
+              echo "💡 Try changing the app name in fly.toml to something unique."
+              exit 1
+            }
+          fi
+          
+          # Deploy the app
+          flyctl deploy --remote-only --ha=false
+          echo "✅ Deployment complete!"
+
+      - name: Get deployment URL
+        if: steps.check-config.outputs.exists == 'true'
+        working-directory: apps/${{ matrix.app }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          APP_NAME=$(grep "^app" fly.toml | cut -d'"' -f2)
+          echo "🌐 App URL: https://${APP_NAME}.fly.dev"
