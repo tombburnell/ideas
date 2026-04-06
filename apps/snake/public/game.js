@@ -266,10 +266,6 @@ function togglePause() {
   updateBoardOverlay();
 }
 
-function trySetDir(nx, ny) {
-  nextDir = { x: nx, y: ny };
-}
-
 /** ←/→ (keyboard or touch): 90° turn relative to current heading. */
 function headingForRelativeTurn() {
   if (running || paused || gameOver) return dir;
@@ -300,9 +296,7 @@ document.addEventListener("keydown", (e) => {
   }
 
   const k = e.key;
-  if (k === "ArrowUp") trySetDir(0, -1);
-  else if (k === "ArrowDown") trySetDir(0, 1);
-  else if (k === "ArrowLeft") turnLeft();
+  if (k === "ArrowLeft") turnLeft();
   else if (k === "ArrowRight") turnRight();
   else if (k === "p" || k === "P") togglePause();
   else if (k === "r" || k === "R") reset();
@@ -366,14 +360,11 @@ function escapeHtml(s) {
 
 function applyDirFromButton(btn) {
   const d = btn.getAttribute("data-dir");
-  if (d === "up") trySetDir(0, -1);
-  else if (d === "down") trySetDir(0, 1);
-  else if (d === "left") turnLeft();
+  if (d === "left") turnLeft();
   else if (d === "right") turnRight();
 }
 
 const touchPadLr = document.getElementById("touchPadLr");
-const touchPadSecondary = document.getElementById("touchPadSecondary");
 
 function bindDirDelegation(root) {
   if (!root) return;
@@ -386,7 +377,6 @@ function bindDirDelegation(root) {
 }
 
 bindDirDelegation(touchPadLr);
-bindDirDelegation(touchPadSecondary);
 
 touchPause?.addEventListener("click", () => togglePause());
 touchRestart?.addEventListener("click", () => reset());
