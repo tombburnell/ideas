@@ -7,6 +7,7 @@ const ctx = canvas.getContext("2d");
 const scoreEl = document.getElementById("score");
 const statusEl = document.getElementById("status");
 const nameInput = document.getElementById("playerName");
+const nameRow = document.getElementById("nameRow");
 const submitBtn = document.getElementById("submitScore");
 const leaderboardEl = document.getElementById("leaderboard");
 const scoresErrorEl = document.getElementById("scoresError");
@@ -14,6 +15,12 @@ const touchPause = document.getElementById("touchPause");
 const touchRestart = document.getElementById("touchRestart");
 const helpToggle = document.getElementById("helpToggle");
 const helpBody = document.getElementById("helpBody");
+const boardOverlay = document.getElementById("boardOverlay");
+const overlayActionBtn = document.getElementById("overlayActionBtn");
+const scoresModal = document.getElementById("scoresModal");
+const openScoresBtn = document.getElementById("openScoresBtn");
+const scoresModalClose = document.getElementById("scoresModalClose");
+const scoresModalBackdrop = document.getElementById("scoresModalBackdrop");
 
 function syncHelpPanel() {
   if (!helpToggle || !helpBody) return;
@@ -38,6 +45,32 @@ helpToggle?.addEventListener("click", () => {
 
 window.matchMedia("(min-width: 720px)").addEventListener("change", syncHelpPanel);
 syncHelpPanel();
+
+function openScoresModal() {
+  if (!scoresModal) return;
+  scoresModal.hidden = false;
+  document.body.classList.add("modal-open");
+  loadScores();
+  scoresModalClose?.focus();
+}
+
+function closeScoresModal() {
+  if (!scoresModal) return;
+  scoresModal.hidden = true;
+  document.body.classList.remove("modal-open");
+  openScoresBtn?.focus();
+}
+
+openScoresBtn?.addEventListener("click", () => openScoresModal());
+scoresModalClose?.addEventListener("click", () => closeScoresModal());
+scoresModalBackdrop?.addEventListener("click", () => closeScoresModal());
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && scoresModal && !scoresModal.hidden) {
+    e.preventDefault();
+    closeScoresModal();
+  }
+});
 
 let cell = 20;
 
@@ -65,6 +98,10 @@ let tickId = null;
 let gameOver = false;
 let lastSubmittedScore = null;
 
+function effectiveDir() {
+  return running ? dir : nextDir;
+}
+
 function randCell() {
   return {
     x: Math.floor(Math.random() * GRID),
@@ -78,6 +115,33 @@ function placeFood() {
     p = randCell();
   } while (snake.some((s) => s.x === p.x && s.y === p.y));
   food = p;
+}
+
+function updateBoardOverlay() {
+  if (!boardOverlay || !overlayActionBtn) return;
+  const show = paused || !running || gameOver;
+  if (show) {
+    boardOverlay.removeAttribute("hidden");
+    boardOverlay.setAttribute("aria-hidden", "false");
+    if (gameOver) overlayActionBtn.textContent = "Try again";
+    else if (paused) overlayActionBtn.textContent = "Resume";
+    else overlayActionBtn.textContent = "Start";
+  } else {
+    boardOverlay.setAttribute("hidden", "");
+    boardOverlay.setAttribute("aria-hidden", "true");
+  }
+}
+
+function resumeFromPause() {
+  if (!running || gameOver || !paused) return;
+  paused = false;
+  updateHud();
+  updateBoardOverlay();
+}
+
+function setNameRowVisible(visible) {
+  if (!nameRow) return;
+  nameRow.classList.toggle("hidden", !visible);
 }
 
 function reset() {
@@ -98,6 +162,8 @@ function reset() {
   updateHud();
   submitBtn.disabled = true;
   lastSubmittedScore = null;
+  setNameRowVisible(false);
+  updateBoardOverlay();
   draw();
 }
 
@@ -166,34 +232,66 @@ function endGame() {
     tickId = null;
   }
   updateHud();
+  setNameRowVisible(true);
   submitBtn.disabled = score <= 0 || lastSubmittedScore === score;
+  updateBoardOverlay();
 }
 
 function start() {
   if (running && !gameOver) return;
-  if (gameOver) reset();
+  if (gameOver) return;
   running = true;
   paused = false;
   updateHud();
+  updateBoardOverlay();
   if (!tickId) tickId = setInterval(tick, TICK_MS);
 }
+
+function handleOverlayAction() {
+  if (paused) {
+    resumeFromPause();
+    return;
+  }
+  if (gameOver) {
+    reset();
+  }
+  start();
+}
+
+overlayActionBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  handleOverlayAction();
+});
 
 function togglePause() {
   if (!running || gameOver) return;
   paused = !paused;
   updateHud();
+  updateBoardOverlay();
 }
 
 function trySetDir(nx, ny) {
-  if (nx === 0 && ny === -1 && dir.y !== 0) return;
-  if (nx === 0 && ny === 1 && dir.y !== 0) return;
-  if (nx === -1 && ny === 0 && dir.x !== 0) return;
-  if (nx === 1 && ny === 0 && dir.x !== 0) return;
+  const d = effectiveDir();
+  if (nx === 0 && ny === -1 && d.y !== 0) return;
+  if (nx === 0 && ny === 1 && d.y !== 0) return;
+  if (nx === -1 && ny === 0 && d.x !== 0) return;
+  if (nx === 1 && ny === 0 && d.x !== 0) return;
   nextDir = { x: nx, y: ny };
-  if (!running && !gameOver) start();
 }
 
 document.addEventListener("keydown", (e) => {
+  if (scoresModal && !scoresModal.hidden && e.key !== "Escape") return;
+
+  if (e.key === " " || e.code === "Space") {
+    const overlayUp =
+      boardOverlay && boardOverlay.getAttribute("aria-hidden") === "false";
+    if (overlayUp) {
+      e.preventDefault();
+      handleOverlayAction();
+    }
+    return;
+  }
+
   const k = e.key;
   if (k === "ArrowUp") trySetDir(0, -1);
   else if (k === "ArrowDown") trySetDir(0, 1);
@@ -221,6 +319,7 @@ submitBtn.addEventListener("click", async () => {
     }
     lastSubmittedScore = score;
     await loadScores();
+    openScoresModal();
   } catch (err) {
     scoresErrorEl.textContent = err.message || "Could not submit score";
     scoresErrorEl.classList.remove("hidden");
@@ -258,10 +357,6 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-canvas.addEventListener("click", () => {
-  if (!running) start();
-});
-
 document.querySelectorAll(".touch-btn[data-dir]").forEach((btn) => {
   btn.addEventListener("pointerdown", (e) => {
     e.preventDefault();
@@ -289,4 +384,3 @@ window.addEventListener("load", layoutCanvas);
 layoutCanvas();
 
 reset();
-loadScores();

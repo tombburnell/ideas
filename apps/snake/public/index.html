@@ -10,6 +10,7 @@
     <div class="crt">
       <header class="header">
         <h1>SNAKE</h1>
+        <button type="button" class="scores-open-btn" id="openScoresBtn">High scores</button>
       </header>
       <main class="layout">
         <section class="panel game-panel">
@@ -19,6 +20,9 @@
           </div>
           <div class="canvas-wrap" id="canvasWrap">
             <canvas id="game" width="400" height="400" aria-label="Snake game"></canvas>
+            <div class="board-overlay" id="boardOverlay" aria-hidden="false">
+              <button type="button" class="overlay-btn" id="overlayActionBtn">Start</button>
+            </div>
           </div>
           <div class="touch-lr-row" id="touchPadLr" aria-label="Turn left and right">
             <button type="button" class="touch-btn touch-btn-lr" data-dir="left" aria-label="Move left">←</button>
@@ -41,8 +45,8 @@
                   <li><span class="key">↑</span><span class="key">↓</span><span class="key">←</span><span class="key">→</span> Move</li>
                   <li><span class="key">P</span> Pause / resume</li>
                   <li><span class="key">R</span> Restart</li>
-                  <li><span class="key">Tap</span> board to start (desktop: click)</li>
-                  <li>After game over: enter name → <span class="key">SUBMIT</span> score</li>
+                  <li>Use <span class="key">Start</span> on the board to begin</li>
+                  <li>After game over: enter name → <span class="key">SUBMIT</span> (opens high scores)</li>
                 </ul>
               </div>
               <div class="touch-secondary" id="touchPadSecondary" aria-label="Extra touch controls">
@@ -61,7 +65,7 @@
               </div>
             </div>
           </div>
-          <div class="name-row">
+          <div class="name-row hidden" id="nameRow" aria-live="polite">
             <label for="playerName">NAME</label>
             <input
               id="playerName"
@@ -73,13 +77,21 @@
             <button type="button" id="submitScore" disabled>SUBMIT</button>
           </div>
         </section>
-        <section class="panel scores-panel">
-          <h2>HIGH SCORES</h2>
-          <ol id="leaderboard" class="leaderboard"></ol>
-          <p id="scoresError" class="error hidden"></p>
-        </section>
       </main>
     </div>
+
+    <div class="modal" id="scoresModal" role="dialog" aria-modal="true" aria-labelledby="scoresModalTitle" hidden>
+      <button type="button" class="modal-backdrop" id="scoresModalBackdrop" tabindex="-1" aria-label="Close high scores"></button>
+      <div class="modal-panel">
+        <div class="modal-header">
+          <h2 id="scoresModalTitle" class="modal-title">High scores</h2>
+          <button type="button" class="modal-close" id="scoresModalClose" aria-label="Close">×</button>
+        </div>
+        <ol id="leaderboard" class="leaderboard modal-leaderboard"></ol>
+        <p id="scoresError" class="error hidden"></p>
+      </div>
+    </div>
+
     <script src="/game.js" type="module"></script>
   </body>
 </html>
