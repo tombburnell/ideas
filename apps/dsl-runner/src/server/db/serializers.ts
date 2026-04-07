@@ -60,6 +60,7 @@ export const serializeStep = (step: WorkflowStep): WorkflowStepRecord => ({
   orderIndex: step.orderIndex,
   inputData: toRecord(step.inputData),
   outputData: toRecord(step.outputData),
+  renderedPrompt: step.renderedPrompt ?? null,
   errorMessage: step.errorMessage,
   startedAt: step.startedAt?.toISOString() ?? null,
   completedAt: step.completedAt?.toISOString() ?? null,

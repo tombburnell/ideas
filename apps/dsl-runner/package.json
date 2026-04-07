@@ -17,6 +17,7 @@
     "@openrouter/ai-sdk-provider": "latest",
     "@prisma/adapter-better-sqlite3": "^7.6.0",
     "@prisma/client": "latest",
+    "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "latest",
     "ai": "latest",
     "better-sqlite3": "^12.8.0",
@@ -30,6 +31,8 @@
     "prisma": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "yaml": "latest",
     "zod": "latest"
   },

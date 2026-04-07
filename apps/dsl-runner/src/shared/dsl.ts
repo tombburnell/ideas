@@ -99,6 +99,7 @@ export interface WorkflowStepRecord {
   orderIndex: number;
   inputData: Record<string, unknown>;
   outputData: Record<string, unknown>;
+  renderedPrompt: string | null;
   errorMessage: string | null;
   startedAt: string | null;
   completedAt: string | null;

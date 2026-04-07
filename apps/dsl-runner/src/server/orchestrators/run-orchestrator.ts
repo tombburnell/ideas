@@ -1,3 +1,4 @@
+import { interpolatePromptTemplate } from "@/lib/prompt-template";
 import { promptService } from "@/server/services/prompt-service";
 import { runEventBus } from "@/server/services/event-bus";
 import { langGraphService } from "@/server/services/langgraph-service";
@@ -89,6 +90,8 @@ export const runOrchestrator = {
 
         runEventBus.publish(createEvent({ runId, status: "running", step: stepRecord, errorMessage: null }));
 
+        let renderedPromptForLlm: string | null = null;
+
         try {
           const llmStep = step as WorkflowLlmStep;
           const prompt = await promptService.get(llmStep.prompt);
@@ -96,6 +99,8 @@ export const runOrchestrator = {
           if (!prompt) {
             throw new Error(`Prompt '${llmStep.prompt}' not found`);
           }
+
+          renderedPromptForLlm = interpolatePromptTemplate(prompt.template, contextData);
 
           const outputData = await openRouterService.executeWorkflowStep({
             step: llmStep,
@@ -112,7 +117,8 @@ export const runOrchestrator = {
 
           const completedStep = await runRepo.completeStep({
             stepRecordId: stepRecord.id,
-            outputData
+            outputData,
+            renderedPrompt: renderedPromptForLlm
           });
 
           runEventBus.publish(createEvent({ runId, status: "running", step: completedStep, errorMessage: null }));
@@ -123,7 +129,8 @@ export const runOrchestrator = {
 
           const failedStep = await runRepo.failStep({
             stepRecordId: stepRecord.id,
-            errorMessage: message
+            errorMessage: message,
+            ...(renderedPromptForLlm !== null ? { renderedPrompt: renderedPromptForLlm } : {})
           });
 
           await runRepo.setRunStatus({

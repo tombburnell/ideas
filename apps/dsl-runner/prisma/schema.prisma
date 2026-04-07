@@ -32,7 +32,7 @@ model WorkflowRun {
 }
 
 model WorkflowStep {
-  id           String   @id @default(cuid())
+  id             String   @id @default(cuid())
   runId         String
   stepId       String
   stepType     String
@@ -40,6 +40,7 @@ model WorkflowStep {
   orderIndex   Int
   inputData    Json
   outputData   Json
+  renderedPrompt String?
   errorMessage String?
   startedAt    DateTime?
   completedAt  DateTime?

@@ -775,6 +775,7 @@ export const WorkflowStepScalarFieldEnum = {
   orderIndex: 'orderIndex',
   inputData: 'inputData',
   outputData: 'outputData',
+  renderedPrompt: 'renderedPrompt',
   errorMessage: 'errorMessage',
   startedAt: 'startedAt',
   completedAt: 'completedAt',
