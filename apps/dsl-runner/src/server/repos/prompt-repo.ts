@@ -84,5 +84,23 @@ export const promptRepo = {
     });
 
     return prompt ? serializePrompt(prompt) : null;
+  },
+
+  async upsertByPromptId(promptId: string, template: string): Promise<PromptRecord> {
+    const prompt = await prisma.prompt.upsert({
+      where: { promptId },
+      create: {
+        promptId,
+        name: "",
+        template,
+        version: 1
+      },
+      update: {
+        template,
+        version: { increment: 1 }
+      }
+    });
+
+    return serializePrompt(prompt);
   }
 };

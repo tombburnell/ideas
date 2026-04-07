@@ -51,7 +51,7 @@ model WorkflowStep {
 model Prompt {
   id        String   @id @default(cuid())
   promptId  String   @unique
-  name      String
+  name      String   @default("")
   template  String
   version   Int
   createdAt DateTime @default(now())

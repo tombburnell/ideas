@@ -2,7 +2,7 @@ import { Router } from "express";
 import { chatOrchestrator } from "@/server/orchestrators/chat-orchestrator";
 import { promptService } from "@/server/services/prompt-service";
 import { workflowService } from "@/server/services/workflow-service";
-import type { ChatEditInput, SaveWorkflowInput } from "@/shared/dsl";
+import type { ChatEditInput, SavePromptInput, SaveWorkflowInput } from "@/shared/dsl";
 
 export const workflowRouter = Router();
 
@@ -67,6 +67,16 @@ workflowRouter.get("/prompts", async (_request, response, next) => {
     response.json({
       prompts: await promptService.list()
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+workflowRouter.post("/prompts", async (request, response, next) => {
+  try {
+    const payload = request.body as SavePromptInput;
+    const prompt = await promptService.save(payload);
+    response.status(201).json({ prompt });
   } catch (error) {
     next(error);
   }
