@@ -64,11 +64,17 @@ const HomePage = (): React.ReactElement => {
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-300">
           <p>{promptsQuery.data?.prompts.length ?? 0} prompts loaded</p>
           <p>{workflows.length} workflows persisted</p>
-          <div className="mt-2 flex flex-col gap-1">
-            <Link className="text-cyan-300 underline" href="/prompts">
+          <div className="mt-3 flex flex-col gap-2">
+            <Link
+              className="inline-flex w-full items-center justify-center rounded-xl border border-cyan-400/40 bg-cyan-500 px-4 py-2.5 text-center text-sm font-semibold text-zinc-950 shadow-sm shadow-cyan-950/30 transition hover:bg-cyan-400"
+              href="/prompts"
+            >
               Prompts
             </Link>
-            <Link className="text-cyan-300 underline" href="/reports">
+            <Link
+              className="inline-flex w-full items-center justify-center rounded-xl border border-zinc-600 bg-zinc-800 px-4 py-2.5 text-center text-sm font-semibold text-zinc-100 transition hover:border-zinc-500 hover:bg-zinc-700"
+              href="/reports"
+            >
               View reports
             </Link>
           </div>

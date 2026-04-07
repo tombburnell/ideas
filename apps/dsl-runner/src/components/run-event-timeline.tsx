@@ -23,7 +23,7 @@ const JsonBlock = ({
   onOpen: () => void;
 }): React.ReactElement => (
   <button
-    className="w-full cursor-pointer rounded-lg border border-zinc-800 bg-zinc-900 p-3 text-left transition hover:border-zinc-600"
+    className="w-full rounded-lg border border-zinc-800 bg-zinc-900 p-3 text-left transition hover:border-zinc-600"
     type="button"
     onClick={onOpen}
   >
@@ -50,7 +50,7 @@ const PromptBox = ({
 
   return (
     <button
-      className="w-full cursor-pointer rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-left transition hover:border-zinc-600"
+      className="w-full rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-left transition hover:border-zinc-600"
       type="button"
       onClick={onOpen}
     >
