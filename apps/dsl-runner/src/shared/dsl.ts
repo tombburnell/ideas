@@ -73,6 +73,11 @@ export interface PromptRecord {
   updatedAt: string;
 }
 
+export interface SavePromptInput {
+  promptId: string;
+  template: string;
+}
+
 export interface WorkflowRunRecord {
   id: string;
   workflowRecordId: string;
@@ -162,6 +167,10 @@ export interface WorkflowListResponse {
 
 export interface PromptListResponse {
   prompts: PromptRecord[];
+}
+
+export interface SavePromptResponse {
+  prompt: PromptRecord;
 }
 
 export interface WorkflowDetailResponse {

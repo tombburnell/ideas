@@ -288,7 +288,7 @@ export type PromptScalarWhereWithAggregatesInput = {
 export type PromptCreateInput = {
   id?: string
   promptId: string
-  name: string
+  name?: string
   template: string
   version: number
   createdAt?: Date | string
@@ -298,7 +298,7 @@ export type PromptCreateInput = {
 export type PromptUncheckedCreateInput = {
   id?: string
   promptId: string
-  name: string
+  name?: string
   template: string
   version: number
   createdAt?: Date | string
@@ -328,7 +328,7 @@ export type PromptUncheckedUpdateInput = {
 export type PromptCreateManyInput = {
   id?: string
   promptId: string
-  name: string
+  name?: string
   template: string
   version: number
   createdAt?: Date | string

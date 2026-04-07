@@ -4,6 +4,8 @@ import type {
   CreateRunInput,
   ReportListResponse,
   RunDetailResponse,
+  SavePromptInput,
+  SavePromptResponse,
   ValidationResponse,
   WorkflowDetailResponse,
   WorkflowListResponse,
@@ -43,6 +45,10 @@ export const apiClient = {
 
   listPrompts(): Promise<PromptListResponse> {
     return fetch("/api/prompts").then(parseResponse<PromptListResponse>);
+  },
+
+  savePrompt(input: SavePromptInput): Promise<SavePromptResponse> {
+    return postJson<SavePromptResponse>("/api/prompts", input);
   },
 
   validateWorkflow(dsl: string): Promise<ValidationResponse> {
