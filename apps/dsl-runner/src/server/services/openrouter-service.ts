@@ -3,6 +3,7 @@ import { generateObject, generateText } from "ai";
 import { load } from "cheerio";
 import { z } from "zod";
 import { appConfig } from "@/config/app-config";
+import { interpolatePromptTemplate } from "@/lib/prompt-template";
 import type { WorkflowLlmStep, WorkflowModelKey } from "@/shared/dsl";
 
 const openrouter = createOpenRouter({
@@ -88,10 +89,7 @@ export const openRouterService = {
     promptTemplate: string;
     contextData: Record<string, unknown>;
   }): Promise<Record<string, unknown>> {
-    const prompt = input.promptTemplate.replace(/{{(.*?)}}/g, (_, key: string) => {
-      const value = input.contextData[key.trim()];
-      return typeof value === "string" ? value : JSON.stringify(value ?? "");
-    });
+    const prompt = interpolatePromptTemplate(input.promptTemplate, input.contextData);
     const outputSchema = createOutputSchema(input.step);
     const schemaInstruction = buildSchemaInstruction(input.step);
     let enrichedContext = input.contextData;

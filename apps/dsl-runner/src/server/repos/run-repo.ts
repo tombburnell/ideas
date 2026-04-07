@@ -142,6 +142,7 @@ export const runRepo = {
   async completeStep(input: {
     stepRecordId: string;
     outputData: Record<string, unknown>;
+    renderedPrompt?: string | null;
   }): Promise<WorkflowStepRecord> {
     const step = await prisma.workflowStep.update({
       where: {
@@ -150,7 +151,8 @@ export const runRepo = {
       data: {
         status: "completed",
         outputData: toJsonValue(input.outputData),
-        completedAt: new Date()
+        completedAt: new Date(),
+        ...(input.renderedPrompt !== undefined ? { renderedPrompt: input.renderedPrompt } : {})
       }
     });
 
@@ -160,6 +162,7 @@ export const runRepo = {
   async failStep(input: {
     stepRecordId: string;
     errorMessage: string;
+    renderedPrompt?: string | null;
   }): Promise<WorkflowStepRecord> {
     const step = await prisma.workflowStep.update({
       where: {
@@ -168,7 +171,8 @@ export const runRepo = {
       data: {
         status: "failed",
         errorMessage: input.errorMessage,
-        completedAt: new Date()
+        completedAt: new Date(),
+        ...(input.renderedPrompt !== undefined ? { renderedPrompt: input.renderedPrompt } : {})
       }
     });
 
