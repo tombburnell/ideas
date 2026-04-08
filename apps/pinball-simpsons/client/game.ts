@@ -79,12 +79,12 @@ for (const list of Object.values(sounds)) {
 }
 sounds.drain[0].volume = 0.75;
 
-const leftFlipperPivot = { x: 210, y: 860 };
-const rightFlipperPivot = { x: 410, y: 860 };
-const leftFlipperRest = -0.35;
-const leftFlipperActive = -1.02;
-const rightFlipperRest = 0.35;
-const rightFlipperActive = 1.02;
+const leftFlipperPivot = { x: 222, y: 860 };
+const rightFlipperPivot = { x: 398, y: 860 };
+const leftFlipperRest = 0.42;
+const leftFlipperActive = -0.32;
+const rightFlipperRest = -0.42;
+const rightFlipperActive = 0.32;
 const leftFlipperBody = world.createRigidBody(
   RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(leftFlipperPivot.x, leftFlipperPivot.y)
 );
@@ -215,16 +215,16 @@ addStaticSegment([PLAYFIELD_RIGHT, 214], [PLAYFIELD_RIGHT, 684], 0.22);
 addStaticSegment([PLAYFIELD_RIGHT, 684], [462, 818], 0.2);
 addStaticSegment([462, 818], [418, 902], 0.18);
 
-addStaticSegment([90, 720], [216, 796], 0.36, 0.06);
-addStaticSegment([510, 720], [388, 796], 0.36, 0.06);
-addStaticSegment([150, 932], [242, 870], 0.15);
-addStaticSegment([454, 932], [370, 870], 0.15);
+addStaticSegment([100, 724], [214, 792], 0.36, 0.06);
+addStaticSegment([500, 724], [386, 792], 0.36, 0.06);
+addStaticSegment([138, 932], [224, 884], 0.15);
+addStaticSegment([466, 932], [396, 884], 0.15);
 
 addSensorRect(310, 938, 102, 20, { type: "drain" });
 laneHandles.push(addSensorRect(150, 212, 42, 16, { type: "lane", points: 150 }));
 laneHandles.push(addSensorRect(470, 212, 42, 16, { type: "lane", points: 150 }));
-addSensorBall(176, 780, 34, { type: "slingshot", points: 25 });
-addSensorBall(430, 780, 34, { type: "slingshot", points: 25 });
+addSensorBall(174, 780, 34, { type: "slingshot", points: 25 });
+addSensorBall(432, 780, 34, { type: "slingshot", points: 25 });
 
 function createBall(inLauncher: boolean) {
   const body = world.createRigidBody(
