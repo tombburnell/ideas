@@ -20,6 +20,8 @@ const PLAYFIELD_RIGHT = 538;
 const LAUNCH_LANE_LEFT = 484;
 const LAUNCH_LANE_RIGHT = 560;
 const LAUNCH_LANE_CENTER = 522;
+const LAUNCH_REST_Y = 900;
+const LAUNCH_GATE_Y = 170;
 
 const scoreEl = document.getElementById("score") as HTMLElement;
 const ballsEl = document.getElementById("balls") as HTMLElement;
@@ -200,12 +202,11 @@ addStaticSegment([PLAYFIELD_LEFT, 198], [PLAYFIELD_LEFT, 704], 0.22);
 addStaticSegment([PLAYFIELD_LEFT, 704], [142, 828], 0.2);
 addStaticSegment([142, 828], [194, 902], 0.18);
 
-addStaticSegment([146, 110], [442, 110], 0.45);
-addStaticSegment([442, 110], [LAUNCH_LANE_LEFT, 150], 0.35);
-addStaticSegment([LAUNCH_LANE_LEFT, 150], [LAUNCH_LANE_LEFT, 894], 0.15);
+addStaticSegment([146, 110], [452, 110], 0.45);
+addStaticSegment([LAUNCH_LANE_LEFT, 110], [LAUNCH_LANE_LEFT, 922], 0.15);
 
 addStaticSegment([LAUNCH_LANE_RIGHT, 96], [LAUNCH_LANE_RIGHT, 930], 0.2);
-addStaticSegment([PLAYFIELD_RIGHT, 110], [LAUNCH_LANE_RIGHT, 196], 0.45);
+addStaticSegment([PLAYFIELD_RIGHT, 110], [LAUNCH_LANE_RIGHT, 150], 0.45);
 addStaticSegment([PLAYFIELD_RIGHT, 196], [PLAYFIELD_RIGHT, 704], 0.22);
 addStaticSegment([PLAYFIELD_RIGHT, 704], [478, 828], 0.2);
 addStaticSegment([478, 828], [426, 902], 0.18);
@@ -224,7 +225,7 @@ addSensorBall(444, 780, 34, { type: "slingshot", points: 25 });
 function createBall(inLauncher: boolean) {
   const body = world.createRigidBody(
     RAPIER.RigidBodyDesc.dynamic()
-      .setTranslation(inLauncher ? LAUNCH_LANE_CENTER : 458, inLauncher ? 855 : 205)
+      .setTranslation(inLauncher ? LAUNCH_LANE_CENTER : 458, inLauncher ? LAUNCH_REST_Y : 205)
       .setLinearDamping(0.12)
       .setAngularDamping(0.2)
       .setCcdEnabled(true)
@@ -316,8 +317,8 @@ function launchBall() {
     running = true;
   }
   if (!ballInLauncher) return;
-  ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: 855 }, true);
-  ballBody.setLinvel({ x: 0, y: -2300 }, true);
+  ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: LAUNCH_REST_Y }, true);
+  ballBody.setLinvel({ x: 0, y: -2850 }, true);
   ballInLauncher = false;
   updateOverlay();
   playSound("launch");
@@ -389,9 +390,14 @@ function stepPhysics(deltaMs: number) {
       if (tag2?.type === "ball" && tag1) handleCollision(tag1, h1);
     });
     const pos = ballBody.translation();
+    if (ballInLauncher) {
+      ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: LAUNCH_REST_Y }, true);
+      ballBody.setLinvel({ x: 0, y: 0 }, true);
+      ballBody.setAngvel(0, true);
+    }
     if (!ballInLauncher && pos.x > LAUNCH_LANE_LEFT + 4 && pos.x < LAUNCH_LANE_RIGHT - 4) {
-      if (pos.y < 205) {
-        ballBody.applyImpulse({ x: -72, y: -18 }, true);
+      if (pos.y < LAUNCH_GATE_Y) {
+        ballBody.applyImpulse({ x: -110, y: -22 }, true);
       }
       if (pos.x < LAUNCH_LANE_LEFT + BALL_RADIUS + 3) {
         ballBody.setTranslation({ x: LAUNCH_LANE_LEFT + BALL_RADIUS + 4, y: pos.y }, true);
@@ -529,9 +535,10 @@ function drawTable() {
 
   const rails = new PIXI.Graphics();
   rails.moveTo(140, 108).lineTo(PLAYFIELD_LEFT, 198).lineTo(PLAYFIELD_LEFT, 704).lineTo(142, 828).lineTo(194, 902);
-  rails.moveTo(146, 110).lineTo(442, 110).lineTo(LAUNCH_LANE_LEFT, 150).lineTo(LAUNCH_LANE_LEFT, 894);
+  rails.moveTo(146, 110).lineTo(452, 110);
+  rails.moveTo(LAUNCH_LANE_LEFT, 110).lineTo(LAUNCH_LANE_LEFT, 922);
   rails.moveTo(LAUNCH_LANE_RIGHT, 96).lineTo(LAUNCH_LANE_RIGHT, 930);
-  rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 196);
+  rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 150);
   rails.moveTo(PLAYFIELD_RIGHT, 196).lineTo(PLAYFIELD_RIGHT, 704).lineTo(478, 828).lineTo(426, 902);
   rails.moveTo(90, 720).lineTo(216, 796).lineTo(142, 828);
   rails.moveTo(530, 720).lineTo(404, 796).lineTo(478, 828);
