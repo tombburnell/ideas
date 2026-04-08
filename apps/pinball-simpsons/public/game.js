@@ -47577,26 +47577,27 @@ for (const list of Object.values(sounds)) {
 sounds.drain[0].volume = 0.75;
 var leftFlipperPivot = { x: 202, y: 860 };
 var rightFlipperPivot = { x: 418, y: 860 };
-var FLIPPER_HALF_LENGTH = 56;
-var FLIPPER_HALF_THICKNESS = 12;
+var FLIPPER_HALF_LENGTH = 58;
+var FLIPPER_HALF_THICKNESS = 14;
 var leftFlipperRest = 0.72;
-var leftFlipperActive = -0.28;
+var leftFlipperActive = -0.4;
 var rightFlipperRest = -0.72;
-var rightFlipperActive = 0.28;
+var rightFlipperActive = 0.4;
+var FLIPPER_SWING_SPEED = 22;
 var leftFlipperBody = world.createRigidBody(
-  cg.RigidBodyDesc.kinematicPositionBased().setTranslation(leftFlipperPivot.x, leftFlipperPivot.y)
+  cg.RigidBodyDesc.kinematicVelocityBased().setTranslation(leftFlipperPivot.x, leftFlipperPivot.y)
 );
 var rightFlipperBody = world.createRigidBody(
-  cg.RigidBodyDesc.kinematicPositionBased().setTranslation(rightFlipperPivot.x, rightFlipperPivot.y)
+  cg.RigidBodyDesc.kinematicVelocityBased().setTranslation(rightFlipperPivot.x, rightFlipperPivot.y)
 );
 leftFlipperBody.setRotation(leftFlipperRest, true);
 rightFlipperBody.setRotation(rightFlipperRest, true);
 world.createCollider(
-  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(FLIPPER_HALF_LENGTH, 0).setRestitution(0.24).setFriction(0.02),
+  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(FLIPPER_HALF_LENGTH, 0).setRestitution(0.32).setFriction(0.02),
   leftFlipperBody
 );
 world.createCollider(
-  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(-FLIPPER_HALF_LENGTH, 0).setRestitution(0.24).setFriction(0.02),
+  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(-FLIPPER_HALF_LENGTH, 0).setRestitution(0.32).setFriction(0.02),
   rightFlipperBody
 );
 var score = 0;
@@ -47683,8 +47684,8 @@ addStaticSegment([PLAYFIELD_RIGHT, LAUNCH_EXIT_Y], [PLAYFIELD_RIGHT, 684], 0.22)
 addStaticSegment([PLAYFIELD_RIGHT, 684], [450, 818], 0.2);
 addStaticSegment([450, 818], [406, 902], 0.18);
 addStaticSegment([LANE_OUTER_WALL_X, LANE_JOIN_Y], [LANE_OUTER_WALL_X, 930], 0.2);
-addStaticSegment([112, 722], [206, 780], 0.28, 0.05);
-addStaticSegment([508, 722], [414, 780], 0.28, 0.05);
+addStaticSegment([106, 716], [194, 770], 0.24, 0.04);
+addStaticSegment([514, 716], [426, 770], 0.24, 0.04);
 addStaticSegment([92, 756], [104, 930], 0.08, 0.02);
 addStaticSegment([528, 756], [516, 930], 0.08, 0.02);
 addStaticSegment([140, 930], [224, 892], 0.12);
@@ -47833,8 +47834,12 @@ function stepPhysics(deltaMs) {
   accumulator += deltaMs / 1e3;
   while (accumulator >= FIXED_STEP) {
     accumulator -= FIXED_STEP;
-    leftFlipperBody.setRotation(leftPressed ? leftFlipperActive : leftFlipperRest, true);
-    rightFlipperBody.setRotation(rightPressed ? rightFlipperActive : rightFlipperRest, true);
+    const leftTarget = leftPressed ? leftFlipperActive : leftFlipperRest;
+    const rightTarget = rightPressed ? rightFlipperActive : rightFlipperRest;
+    const leftDiff = leftTarget - leftFlipperBody.rotation();
+    const rightDiff = rightTarget - rightFlipperBody.rotation();
+    leftFlipperBody.setAngvel(Math.max(-FLIPPER_SWING_SPEED, Math.min(FLIPPER_SWING_SPEED, leftDiff / FIXED_STEP)), true);
+    rightFlipperBody.setAngvel(Math.max(-FLIPPER_SWING_SPEED, Math.min(FLIPPER_SWING_SPEED, rightDiff / FIXED_STEP)), true);
     world.step(eventQueue);
     eventQueue.drainCollisionEvents((h1, h22, started) => {
       if (!started) return;
