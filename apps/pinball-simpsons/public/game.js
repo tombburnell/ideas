@@ -47551,7 +47551,7 @@ await app.init({ backgroundAlpha: 0, antialias: true, resizeTo: gameWrap });
 app.stage.eventMode = "static";
 gameWrap.appendChild(app.canvas);
 await cg.init();
-var world = new cg.World({ x: 0, y: 1800 });
+var world = new cg.World({ x: 0, y: 1100 });
 var eventQueue = new cg.EventQueue(true);
 var colliderTags = /* @__PURE__ */ new Map();
 var ballGraphic = new Graphics();
@@ -47579,10 +47579,10 @@ var leftFlipperPivot = { x: 202, y: 860 };
 var rightFlipperPivot = { x: 418, y: 860 };
 var FLIPPER_HALF_LENGTH = 56;
 var FLIPPER_HALF_THICKNESS = 12;
-var leftFlipperRest = 0.68;
-var leftFlipperActive = -0.18;
-var rightFlipperRest = -0.68;
-var rightFlipperActive = 0.18;
+var leftFlipperRest = 0.72;
+var leftFlipperActive = -0.28;
+var rightFlipperRest = -0.72;
+var rightFlipperActive = 0.28;
 var leftFlipperBody = world.createRigidBody(
   cg.RigidBodyDesc.kinematicPositionBased().setTranslation(leftFlipperPivot.x, leftFlipperPivot.y)
 );
@@ -47592,11 +47592,11 @@ var rightFlipperBody = world.createRigidBody(
 leftFlipperBody.setRotation(leftFlipperRest, true);
 rightFlipperBody.setRotation(rightFlipperRest, true);
 world.createCollider(
-  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(FLIPPER_HALF_LENGTH, 0).setRestitution(0.15).setFriction(0.05),
+  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(FLIPPER_HALF_LENGTH, 0).setRestitution(0.24).setFriction(0.02),
   leftFlipperBody
 );
 world.createCollider(
-  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(-FLIPPER_HALF_LENGTH, 0).setRestitution(0.15).setFriction(0.05),
+  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(-FLIPPER_HALF_LENGTH, 0).setRestitution(0.24).setFriction(0.02),
   rightFlipperBody
 );
 var score = 0;
@@ -47683,10 +47683,12 @@ addStaticSegment([PLAYFIELD_RIGHT, LAUNCH_EXIT_Y], [PLAYFIELD_RIGHT, 684], 0.22)
 addStaticSegment([PLAYFIELD_RIGHT, 684], [450, 818], 0.2);
 addStaticSegment([450, 818], [406, 902], 0.18);
 addStaticSegment([LANE_OUTER_WALL_X, LANE_JOIN_Y], [LANE_OUTER_WALL_X, 930], 0.2);
-addStaticSegment([96, 724], [196, 784], 0.36, 0.06);
-addStaticSegment([512, 724], [412, 784], 0.36, 0.06);
-addStaticSegment([126, 932], [210, 892], 0.15);
-addStaticSegment([482, 932], [398, 892], 0.15);
+addStaticSegment([112, 722], [206, 780], 0.28, 0.05);
+addStaticSegment([508, 722], [414, 780], 0.28, 0.05);
+addStaticSegment([92, 756], [104, 930], 0.08, 0.02);
+addStaticSegment([528, 756], [516, 930], 0.08, 0.02);
+addStaticSegment([140, 930], [224, 892], 0.12);
+addStaticSegment([480, 930], [396, 892], 0.12);
 addSensorRect(310, 938, 102, 20, { type: "drain" });
 laneHandles.push(addSensorRect(150, 212, 42, 16, { type: "lane", points: 150 }));
 laneHandles.push(addSensorRect(470, 212, 42, 16, { type: "lane", points: 150 }));

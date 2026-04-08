@@ -58,7 +58,7 @@ app.stage.eventMode = "static";
 gameWrap.appendChild(app.canvas);
 
 await RAPIER.init();
-const world = new RAPIER.World({ x: 0, y: 1800 });
+const world = new RAPIER.World({ x: 0, y: 1100 });
 const eventQueue = new RAPIER.EventQueue(true);
 const colliderTags = new Map<number, ColliderTag>();
 const ballGraphic = new PIXI.Graphics();
@@ -88,10 +88,10 @@ const leftFlipperPivot = { x: 202, y: 860 };
 const rightFlipperPivot = { x: 418, y: 860 };
 const FLIPPER_HALF_LENGTH = 56;
 const FLIPPER_HALF_THICKNESS = 12;
-const leftFlipperRest = 0.68;
-const leftFlipperActive = -0.18;
-const rightFlipperRest = -0.68;
-const rightFlipperActive = 0.18;
+const leftFlipperRest = 0.72;
+const leftFlipperActive = -0.28;
+const rightFlipperRest = -0.72;
+const rightFlipperActive = 0.28;
 const leftFlipperBody = world.createRigidBody(
   RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(leftFlipperPivot.x, leftFlipperPivot.y)
 );
@@ -103,15 +103,15 @@ rightFlipperBody.setRotation(rightFlipperRest, true);
 world.createCollider(
   RAPIER.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS)
     .setTranslation(FLIPPER_HALF_LENGTH, 0)
-    .setRestitution(0.15)
-    .setFriction(0.05),
+    .setRestitution(0.24)
+    .setFriction(0.02),
   leftFlipperBody
 );
 world.createCollider(
   RAPIER.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS)
     .setTranslation(-FLIPPER_HALF_LENGTH, 0)
-    .setRestitution(0.15)
-    .setFriction(0.05),
+    .setRestitution(0.24)
+    .setFriction(0.02),
   rightFlipperBody
 );
 
@@ -227,10 +227,12 @@ addStaticSegment([450, 818], [406, 902], 0.18);
 
 addStaticSegment([LANE_OUTER_WALL_X, LANE_JOIN_Y], [LANE_OUTER_WALL_X, 930], 0.2);
 
-addStaticSegment([96, 724], [196, 784], 0.36, 0.06);
-addStaticSegment([512, 724], [412, 784], 0.36, 0.06);
-addStaticSegment([126, 932], [210, 892], 0.15);
-addStaticSegment([482, 932], [398, 892], 0.15);
+addStaticSegment([112, 722], [206, 780], 0.28, 0.05);
+addStaticSegment([508, 722], [414, 780], 0.28, 0.05);
+addStaticSegment([92, 756], [104, 930], 0.08, 0.02);
+addStaticSegment([528, 756], [516, 930], 0.08, 0.02);
+addStaticSegment([140, 930], [224, 892], 0.12);
+addStaticSegment([480, 930], [396, 892], 0.12);
 
 addSensorRect(310, 938, 102, 20, { type: "drain" });
 laneHandles.push(addSensorRect(150, 212, 42, 16, { type: "lane", points: 150 }));
