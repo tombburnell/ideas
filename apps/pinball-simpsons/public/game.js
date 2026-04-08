@@ -47518,10 +47518,7 @@ var LAUNCH_LANE_LEFT = 484;
 var LAUNCH_LANE_RIGHT = 560;
 var LAUNCH_LANE_CENTER = 522;
 var LAUNCH_REST_Y = 900;
-var LAUNCH_CURVE_START_Y = 186;
-var LAUNCH_CURVE_PEAK_Y = 112;
-var LAUNCH_FEED_TARGET_X = 352;
-var LAUNCH_FEED_TARGET_Y = 176;
+var LAUNCH_EXIT_Y = 286;
 var scoreEl = document.getElementById("score");
 var ballsEl = document.getElementById("balls");
 var highScoreEl = document.getElementById("highScore");
@@ -47613,7 +47610,6 @@ var drainPending = false;
 var leftLaneLit = false;
 var rightLaneLit = false;
 var ballInProtectedLaunchLane = false;
-var launchFeedProgress = 0;
 var ballBody = createBall(true);
 var laneHandles = [];
 function playSound(key) {
@@ -47681,11 +47677,14 @@ addStaticSegment([140, 108], [PLAYFIELD_LEFT, 198], 0.45);
 addStaticSegment([PLAYFIELD_LEFT, 198], [PLAYFIELD_LEFT, 704], 0.22);
 addStaticSegment([PLAYFIELD_LEFT, 704], [142, 828], 0.2);
 addStaticSegment([142, 828], [194, 902], 0.18);
-addStaticSegment([146, 110], [452, 110], 0.45);
-addStaticSegment([LAUNCH_LANE_LEFT, 110], [LAUNCH_LANE_LEFT, 922], 0.15);
+addStaticSegment([146, 110], [470, 110], 0.45);
+addStaticSegment([LAUNCH_LANE_LEFT, LAUNCH_EXIT_Y], [LAUNCH_LANE_LEFT, 922], 0.15);
 addStaticSegment([LAUNCH_LANE_RIGHT, 96], [LAUNCH_LANE_RIGHT, 930], 0.2);
 addStaticSegment([PLAYFIELD_RIGHT, 110], [LAUNCH_LANE_RIGHT, 150], 0.45);
-addStaticSegment([PLAYFIELD_RIGHT, 196], [PLAYFIELD_RIGHT, 684], 0.22);
+addStaticSegment([470, 110], [500, 124], 0.42);
+addStaticSegment([500, 124], [524, 154], 0.42);
+addStaticSegment([524, 154], [PLAYFIELD_RIGHT, 214], 0.42);
+addStaticSegment([PLAYFIELD_RIGHT, 214], [PLAYFIELD_RIGHT, 684], 0.22);
 addStaticSegment([PLAYFIELD_RIGHT, 684], [462, 818], 0.2);
 addStaticSegment([462, 818], [418, 902], 0.18);
 addStaticSegment([90, 720], [216, 796], 0.36, 0.06);
@@ -47715,7 +47714,6 @@ function replaceBall(inLauncher) {
   ballBody = createBall(inLauncher);
   ballInLauncher = inLauncher;
   ballInProtectedLaunchLane = false;
-  launchFeedProgress = 0;
   drainPending = false;
 }
 function updateHud() {
@@ -47783,7 +47781,6 @@ function launchBall() {
   ballBody.setLinvel({ x: 0, y: -3200 }, true);
   ballInLauncher = false;
   ballInProtectedLaunchLane = true;
-  launchFeedProgress = 0;
   updateOverlay();
   playSound("launch");
 }
@@ -47858,39 +47855,15 @@ function stepPhysics(deltaMs) {
     }
     if (ballInProtectedLaunchLane) {
       const currentVel = ballBody.linvel();
-      let targetX = LAUNCH_LANE_CENTER;
-      let targetY = pos.y;
-      let targetVel = { x: 0, y: Math.min(currentVel.y, -3e3) };
-      if (pos.y > LAUNCH_CURVE_START_Y) {
-        targetY = pos.y;
+      if (pos.y > LAUNCH_EXIT_Y) {
+        ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: pos.y }, true);
+        ballBody.setLinvel({ x: 0, y: Math.min(currentVel.y, -3e3) }, true);
       } else {
-        launchFeedProgress = Math.min(
-          1,
-          (LAUNCH_CURVE_START_Y - pos.y) / (LAUNCH_CURVE_START_Y - LAUNCH_CURVE_PEAK_Y)
-        );
-        const eased = 1 - (1 - launchFeedProgress) * (1 - launchFeedProgress);
-        targetX = LAUNCH_LANE_CENTER + (LAUNCH_FEED_TARGET_X - LAUNCH_LANE_CENTER) * eased;
-        targetY = LAUNCH_CURVE_START_Y + (LAUNCH_FEED_TARGET_Y - LAUNCH_CURVE_START_Y) * eased;
-        targetVel = {
-          x: -1200,
-          y: -900 + 1300 * eased
-        };
-      }
-      ballBody.setTranslation({ x: targetX, y: targetY }, true);
-      ballBody.setLinvel(targetVel, true);
-      ballBody.setAngvel(0, true);
-      if (launchFeedProgress >= 1) {
         ballInProtectedLaunchLane = false;
-        launchFeedProgress = 0;
-        ballBody.setTranslation({ x: LAUNCH_FEED_TARGET_X, y: LAUNCH_FEED_TARGET_Y }, true);
-        ballBody.setLinvel({ x: -420, y: 180 }, true);
+        ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: pos.y }, true);
+        ballBody.setLinvel({ x: 0, y: Math.min(currentVel.y, -2850) }, true);
       }
-    } else if (!ballInLauncher && pos.x > LAUNCH_LANE_LEFT + 4 && pos.x < LAUNCH_LANE_RIGHT - 4) {
-      if (pos.x < LAUNCH_LANE_LEFT + BALL_RADIUS + 3) {
-        ballBody.setTranslation({ x: LAUNCH_LANE_LEFT + BALL_RADIUS + 4, y: pos.y }, true);
-      } else if (pos.x > LAUNCH_LANE_RIGHT - BALL_RADIUS - 3) {
-        ballBody.setTranslation({ x: LAUNCH_LANE_RIGHT - BALL_RADIUS - 4, y: pos.y }, true);
-      }
+      ballBody.setAngvel(0, true);
     }
     if (!ballInLauncher && pos.y > VIRTUAL_HEIGHT + 100) {
       drainBall();
@@ -47934,8 +47907,7 @@ function drawTable() {
   bg.rect(0, 210, VIRTUAL_WIDTH, 790).fill({ color: 15910703 });
   bg.roundRect(70, 78, 478, 870, 36).stroke({ color: 16777215, width: 10, alpha: 0.5 });
   bg.roundRect(PLAYFIELD_LEFT, 96, PLAYFIELD_RIGHT - PLAYFIELD_LEFT, 832, 28).fill({ color: 16176472, alpha: 0.35 }).stroke({ color: 2107210, width: 6, alpha: 0.42 });
-  bg.roundRect(LAUNCH_LANE_LEFT, 96, LAUNCH_LANE_RIGHT - LAUNCH_LANE_LEFT, 832, 22).fill({ color: 10414079, alpha: 0.62 }).stroke({ color: 16777215, width: 4, alpha: 0.85 });
-  bg.moveTo(LAUNCH_LANE_LEFT, LAUNCH_CURVE_START_Y).quadraticCurveTo(LAUNCH_LANE_LEFT + 8, 118, LAUNCH_FEED_TARGET_X, LAUNCH_FEED_TARGET_Y).lineTo(LAUNCH_FEED_TARGET_X + 26, LAUNCH_FEED_TARGET_Y + 18).quadraticCurveTo(LAUNCH_LANE_RIGHT - 12, 150, LAUNCH_LANE_RIGHT, LAUNCH_CURVE_START_Y).fill({ color: 10414079, alpha: 0.62 }).stroke({ color: 16777215, width: 4, alpha: 0.85 });
+  bg.roundRect(LAUNCH_LANE_LEFT, LAUNCH_EXIT_Y - 26, LAUNCH_LANE_RIGHT - LAUNCH_LANE_LEFT, 858 - LAUNCH_EXIT_Y, 22).fill({ color: 10414079, alpha: 0.62 }).stroke({ color: 16777215, width: 4, alpha: 0.85 });
   tableLayer.addChild(bg);
   const logo = Sprite.from("/assets/simpsons-logo.svg");
   logo.anchor.set(0.5);
@@ -47946,7 +47918,7 @@ function drawTable() {
   tableLayer.addChild(logo);
   const lanePanel = new Graphics();
   lanePanel.roundRect(118, 138, 332, 72, 28).fill({ color: 16774603 }).stroke({ color: 3621230, width: 4 });
-  lanePanel.roundRect(LAUNCH_LANE_LEFT + 6, 132, 60, 166, 24).fill({ color: 16777215, alpha: 0.18 });
+  lanePanel.roundRect(LAUNCH_LANE_LEFT + 6, LAUNCH_EXIT_Y + 12, 60, 132, 24).fill({ color: 16777215, alpha: 0.18 });
   tableLayer.addChild(lanePanel, makeLight(150, 212, leftLaneLit), makeLight(470, 212, rightLaneLit));
   const chalkboard = new Graphics();
   chalkboard.roundRect(122, 118, 180, 76, 18).fill({ color: 2901048 }).stroke({ color: 16050336, width: 4 });
@@ -48006,13 +47978,11 @@ function drawTable() {
   tableLayer.addChild(stars);
   const rails = new Graphics();
   rails.moveTo(140, 108).lineTo(PLAYFIELD_LEFT, 198).lineTo(PLAYFIELD_LEFT, 704).lineTo(142, 828).lineTo(194, 902);
-  rails.moveTo(146, 110).lineTo(452, 110);
-  rails.moveTo(LAUNCH_LANE_LEFT, 110).lineTo(LAUNCH_LANE_LEFT, 922);
+  rails.moveTo(146, 110).lineTo(470, 110);
+  rails.moveTo(LAUNCH_LANE_LEFT, LAUNCH_EXIT_Y).lineTo(LAUNCH_LANE_LEFT, 922);
   rails.moveTo(LAUNCH_LANE_RIGHT, 96).lineTo(LAUNCH_LANE_RIGHT, 930);
-  rails.moveTo(LAUNCH_LANE_LEFT, LAUNCH_CURVE_START_Y).quadraticCurveTo(LAUNCH_LANE_LEFT + 8, 118, LAUNCH_FEED_TARGET_X, LAUNCH_FEED_TARGET_Y);
-  rails.moveTo(LAUNCH_FEED_TARGET_X + 26, LAUNCH_FEED_TARGET_Y + 18).quadraticCurveTo(LAUNCH_LANE_RIGHT - 12, 150, LAUNCH_LANE_RIGHT, LAUNCH_CURVE_START_Y);
   rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 150);
-  rails.moveTo(PLAYFIELD_RIGHT, 196).lineTo(PLAYFIELD_RIGHT, 684).lineTo(462, 818).lineTo(418, 902);
+  rails.moveTo(470, 110).lineTo(500, 124).lineTo(524, 154).lineTo(PLAYFIELD_RIGHT, 214).lineTo(PLAYFIELD_RIGHT, 684).lineTo(462, 818).lineTo(418, 902);
   rails.moveTo(90, 720).lineTo(216, 796).lineTo(142, 828);
   rails.moveTo(510, 720).lineTo(388, 796).lineTo(462, 818);
   rails.moveTo(150, 932).lineTo(242, 870);
