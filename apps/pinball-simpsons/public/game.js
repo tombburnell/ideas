@@ -47774,7 +47774,7 @@ function launchBall() {
   }
   if (!ballInLauncher) return;
   ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: LAUNCH_REST_Y }, true);
-  ballBody.setLinvel({ x: 0, y: -3200 }, true);
+  ballBody.setLinvel({ x: 0, y: -1600 }, true);
   ballInLauncher = false;
   ballInProtectedLaunchLane = true;
   updateOverlay();
@@ -47833,8 +47833,8 @@ function stepPhysics(deltaMs) {
   accumulator += deltaMs / 1e3;
   while (accumulator >= FIXED_STEP) {
     accumulator -= FIXED_STEP;
-    leftFlipperBody.setNextKinematicRotation(leftPressed ? leftFlipperActive : leftFlipperRest);
-    rightFlipperBody.setNextKinematicRotation(rightPressed ? rightFlipperActive : rightFlipperRest);
+    leftFlipperBody.setRotation(leftPressed ? leftFlipperActive : leftFlipperRest, true);
+    rightFlipperBody.setRotation(rightPressed ? rightFlipperActive : rightFlipperRest, true);
     world.step(eventQueue);
     eventQueue.drainCollisionEvents((h1, h22, started) => {
       if (!started) return;
