@@ -42967,6 +42967,7 @@ var Text = class extends AbstractText {
 init_textureFrom();
 init_Container();
 init_Graphics();
+init_Sprite();
 init_eventemitter3();
 extensions.add(browserExt, webworkerExt);
 
@@ -47511,9 +47512,14 @@ var BALL_RADIUS = 13;
 var BASE_BALLS = 3;
 var EXTRA_BALL_THRESHOLDS = [1500, 3500];
 var FIXED_STEP = 1 / 60;
+var PLAYFIELD_LEFT = 82;
+var PLAYFIELD_RIGHT = 538;
+var LAUNCH_LANE_LEFT = 484;
+var LAUNCH_LANE_RIGHT = 560;
+var LAUNCH_LANE_CENTER = 522;
 var scoreEl = document.getElementById("score");
 var ballsEl = document.getElementById("balls");
-var statusEl = document.getElementById("status");
+var highScoreEl = document.getElementById("highScore");
 var overlay = document.getElementById("boardOverlay");
 var overlayMessage = document.getElementById("overlayMessage");
 var overlayActionBtn = document.getElementById("overlayActionBtn");
@@ -47530,6 +47536,10 @@ var scoresModal = document.getElementById("scoresModal");
 var openScoresBtn = document.getElementById("openScoresBtn");
 var scoresModalClose = document.getElementById("scoresModalClose");
 var scoresModalBackdrop = document.getElementById("scoresModalBackdrop");
+var helpModal = document.getElementById("helpModal");
+var openHelpBtn = document.getElementById("openHelpBtn");
+var helpModalClose = document.getElementById("helpModalClose");
+var helpModalBackdrop = document.getElementById("helpModalBackdrop");
 var app = new Application();
 await app.init({ backgroundAlpha: 0, antialias: true, resizeTo: gameWrap });
 app.stage.eventMode = "static";
@@ -47563,8 +47573,8 @@ var leftFlipperPivot = { x: 210, y: 860 };
 var rightFlipperPivot = { x: 410, y: 860 };
 var leftFlipperRest = -0.35;
 var leftFlipperActive = -1.02;
-var rightFlipperRest = Math.PI + 0.35;
-var rightFlipperActive = Math.PI + 1.02;
+var rightFlipperRest = 0.35;
+var rightFlipperActive = 1.02;
 var leftFlipperBody = world.createRigidBody(
   cg.RigidBodyDesc.kinematicPositionBased().setTranslation(leftFlipperPivot.x, leftFlipperPivot.y)
 );
@@ -47582,6 +47592,7 @@ world.createCollider(
   rightFlipperBody
 );
 var score = 0;
+var highScore = 0;
 var ballsRemaining = BASE_BALLS;
 var awardedExtraBalls = 0;
 var running = false;
@@ -47659,30 +47670,30 @@ var bumpers = [
   addBumper(310, 250, 36, 150),
   addBumper(420, 335, 34, 125)
 ];
-addStaticSegment([112, 110], [82, 295], 0.35);
-addStaticSegment([82, 295], [118, 615], 0.25);
-addStaticSegment([508, 110], [538, 295], 0.35);
-addStaticSegment([538, 295], [502, 615], 0.25);
-addStaticSegment([118, 615], [165, 820], 0.2);
-addStaticSegment([502, 615], [455, 820], 0.2);
-addStaticSegment([165, 820], [195, 900], 0.2);
-addStaticSegment([455, 820], [425, 900], 0.2);
-addStaticSegment([145, 110], [475, 110], 0.45);
-addStaticSegment([480, 110], [538, 190], 0.45);
-addStaticSegment([82, 190], [140, 110], 0.45);
-addStaticSegment([155, 930], [242, 870], 0.15);
-addStaticSegment([465, 930], [378, 870], 0.15);
-addStaticSegment([475, 145], [475, 895], 0.15);
-addStaticSegment([560, 95], [560, 930], 0.2);
-addStaticSegment([475, 895], [560, 930], 0.2);
-addSensorRect(520, 930, 60, 20, { type: "drain" });
+addStaticSegment([140, 108], [PLAYFIELD_LEFT, 198], 0.45);
+addStaticSegment([PLAYFIELD_LEFT, 198], [PLAYFIELD_LEFT, 704], 0.22);
+addStaticSegment([PLAYFIELD_LEFT, 704], [142, 828], 0.2);
+addStaticSegment([142, 828], [194, 902], 0.18);
+addStaticSegment([146, 110], [442, 110], 0.45);
+addStaticSegment([442, 110], [LAUNCH_LANE_LEFT, 150], 0.35);
+addStaticSegment([LAUNCH_LANE_LEFT, 150], [LAUNCH_LANE_LEFT, 894], 0.15);
+addStaticSegment([LAUNCH_LANE_RIGHT, 96], [LAUNCH_LANE_RIGHT, 930], 0.2);
+addStaticSegment([PLAYFIELD_RIGHT, 110], [LAUNCH_LANE_RIGHT, 196], 0.45);
+addStaticSegment([PLAYFIELD_RIGHT, 196], [PLAYFIELD_RIGHT, 704], 0.22);
+addStaticSegment([PLAYFIELD_RIGHT, 704], [478, 828], 0.2);
+addStaticSegment([478, 828], [426, 902], 0.18);
+addStaticSegment([90, 720], [216, 796], 0.36, 0.06);
+addStaticSegment([530, 720], [404, 796], 0.36, 0.06);
+addStaticSegment([150, 932], [242, 870], 0.15);
+addStaticSegment([470, 932], [378, 870], 0.15);
+addSensorRect(310, 938, 102, 20, { type: "drain" });
 laneHandles.push(addSensorRect(150, 212, 42, 16, { type: "lane", points: 150 }));
 laneHandles.push(addSensorRect(470, 212, 42, 16, { type: "lane", points: 150 }));
-addSensorBall(210, 324, 38, { type: "slingshot", points: 25 });
-addSensorBall(410, 324, 38, { type: "slingshot", points: 25 });
+addSensorBall(176, 780, 34, { type: "slingshot", points: 25 });
+addSensorBall(444, 780, 34, { type: "slingshot", points: 25 });
 function createBall(inLauncher) {
   const body = world.createRigidBody(
-    cg.RigidBodyDesc.dynamic().setTranslation(inLauncher ? 520 : 500, inLauncher ? 855 : 735).setLinearDamping(0.12).setAngularDamping(0.2).setCcdEnabled(true)
+    cg.RigidBodyDesc.dynamic().setTranslation(inLauncher ? LAUNCH_LANE_CENTER : 458, inLauncher ? 855 : 205).setLinearDamping(0.12).setAngularDamping(0.2).setCcdEnabled(true)
   );
   const collider = world.createCollider(
     cg.ColliderDesc.ball(BALL_RADIUS).setDensity(0.8).setRestitution(0.72).setFriction(0.02).setActiveEvents(cg.ActiveEvents.COLLISION_EVENTS),
@@ -47702,9 +47713,7 @@ function replaceBall(inLauncher) {
 function updateHud() {
   scoreEl.textContent = String(score);
   ballsEl.textContent = String(ballsRemaining);
-}
-function setStatus(text) {
-  statusEl.textContent = text;
+  highScoreEl.textContent = String(highScore);
 }
 function setNameRowVisible(visible) {
   nameRow.classList.toggle("hidden", !visible);
@@ -47747,11 +47756,11 @@ function triggerBurst(color, x3, y3) {
 }
 function awardPoints(points) {
   score += points;
+  highScore = Math.max(highScore, score);
   for (let i3 = awardedExtraBalls; i3 < EXTRA_BALL_THRESHOLDS.length; i3 += 1) {
     if (score >= EXTRA_BALL_THRESHOLDS[i3]) {
       ballsRemaining += 1;
       awardedExtraBalls += 1;
-      setStatus("EXTRA BALL");
       triggerBurst(i3 % 2 === 0 ? 16736972 : 7595519, 310, 330);
     }
   }
@@ -47762,9 +47771,9 @@ function launchBall() {
     running = true;
   }
   if (!ballInLauncher) return;
-  ballBody.setLinvel({ x: -180 - Math.random() * 50, y: -1580 - Math.random() * 120 }, true);
+  ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: 855 }, true);
+  ballBody.setLinvel({ x: 0, y: -2300 }, true);
   ballInLauncher = false;
-  setStatus("PLAY");
   updateOverlay();
   playSound("launch");
 }
@@ -47777,7 +47786,6 @@ function drainBall() {
   if (ballsRemaining <= 0) {
     running = false;
     gameOver = true;
-    setStatus("GAME OVER");
     setNameRowVisible(true);
     submitBtn.disabled = score <= 0 || lastSubmittedScore === score;
     updateOverlay();
@@ -47786,7 +47794,6 @@ function drainBall() {
   window.setTimeout(() => {
     replaceBall(true);
     running = true;
-    setStatus("LAUNCH");
     updateOverlay();
   }, 900);
 }
@@ -47834,16 +47841,23 @@ function stepPhysics(deltaMs) {
       if (tag2?.type === "ball" && tag1) handleCollision(tag1, h1);
     });
     const pos = ballBody.translation();
-    if (!ballInLauncher && pos.x > 474 && pos.y < 170) {
-      ballBody.applyImpulse({ x: -60, y: 0 }, true);
+    if (!ballInLauncher && pos.x > LAUNCH_LANE_LEFT + 4 && pos.x < LAUNCH_LANE_RIGHT - 4) {
+      if (pos.y < 205) {
+        ballBody.applyImpulse({ x: -72, y: -18 }, true);
+      }
+      if (pos.x < LAUNCH_LANE_LEFT + BALL_RADIUS + 3) {
+        ballBody.setTranslation({ x: LAUNCH_LANE_LEFT + BALL_RADIUS + 4, y: pos.y }, true);
+      } else if (pos.x > LAUNCH_LANE_RIGHT - BALL_RADIUS - 3) {
+        ballBody.setTranslation({ x: LAUNCH_LANE_RIGHT - BALL_RADIUS - 4, y: pos.y }, true);
+      }
     }
     if (!ballInLauncher && pos.y > VIRTUAL_HEIGHT + 100) {
       drainBall();
     }
-    if (leftPressed && pos.y > 770 && pos.x < 290) {
+    if (leftPressed && pos.y > 770 && pos.x < 300) {
       ballBody.applyImpulse({ x: 22, y: -34 }, true);
     }
-    if (rightPressed && pos.y > 770 && pos.x > 330) {
+    if (rightPressed && pos.y > 770 && pos.x > 320) {
       ballBody.applyImpulse({ x: -22, y: -34 }, true);
     }
   }
@@ -47874,15 +47888,23 @@ function drawStar(g3, x3, y3, r1, r22, points, color) {
 function drawTable() {
   tableLayer.removeChildren();
   const bg = new Graphics();
-  bg.roundRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, 28).fill({ color: 9099775 });
-  bg.rect(0, 330, VIRTUAL_WIDTH, 670).fill({ color: 16106793 });
-  bg.rect(0, 0, VIRTUAL_WIDTH, 125).fill({ color: 8308991 });
-  bg.roundRect(96, 94, 428, 220, 48).fill({ color: 16379818, alpha: 0.9 });
-  bg.roundRect(74, 76, 472, 870, 34).stroke({ color: 16777215, width: 10, alpha: 0.45 });
-  bg.roundRect(92, 94, 436, 834, 28).stroke({ color: 2107210, width: 6, alpha: 0.42 });
+  bg.roundRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, 28).fill({ color: 8706303 });
+  bg.rect(0, 0, VIRTUAL_WIDTH, 210).fill({ color: 9362175 });
+  bg.rect(0, 210, VIRTUAL_WIDTH, 790).fill({ color: 15910703 });
+  bg.roundRect(70, 78, 478, 870, 36).stroke({ color: 16777215, width: 10, alpha: 0.5 });
+  bg.roundRect(PLAYFIELD_LEFT, 96, PLAYFIELD_RIGHT - PLAYFIELD_LEFT, 832, 28).fill({ color: 16176472, alpha: 0.35 }).stroke({ color: 2107210, width: 6, alpha: 0.42 });
+  bg.roundRect(LAUNCH_LANE_LEFT, 96, LAUNCH_LANE_RIGHT - LAUNCH_LANE_LEFT, 832, 22).fill({ color: 10414079, alpha: 0.62 }).stroke({ color: 16777215, width: 4, alpha: 0.85 });
   tableLayer.addChild(bg);
+  const logo = Sprite.from("/assets/simpsons-logo.svg");
+  logo.anchor.set(0.5);
+  logo.position.set(300, 710);
+  logo.width = 350;
+  logo.height = 140;
+  logo.alpha = 0.16;
+  tableLayer.addChild(logo);
   const lanePanel = new Graphics();
-  lanePanel.roundRect(118, 138, 384, 72, 28).fill({ color: 16774603 }).stroke({ color: 3621230, width: 4 });
+  lanePanel.roundRect(118, 138, 332, 72, 28).fill({ color: 16774603 }).stroke({ color: 3621230, width: 4 });
+  lanePanel.roundRect(LAUNCH_LANE_LEFT + 6, 132, 60, 166, 24).fill({ color: 16777215, alpha: 0.18 });
   tableLayer.addChild(lanePanel, makeLight(150, 212, leftLaneLit), makeLight(470, 212, rightLaneLit));
   const chalkboard = new Graphics();
   chalkboard.roundRect(122, 118, 180, 76, 18).fill({ color: 2901048 }).stroke({ color: 16050336, width: 4 });
@@ -47895,10 +47917,10 @@ function drawTable() {
   chalkText.position.set(144, 132);
   tableLayer.addChild(chalkboard, chalkText);
   const cloud = new Graphics();
-  cloud.circle(360, 147, 26).fill({ color: 16777215, alpha: 0.9 });
-  cloud.circle(394, 138, 34).fill({ color: 16777215, alpha: 0.9 });
-  cloud.circle(428, 149, 24).fill({ color: 16777215, alpha: 0.9 });
-  cloud.roundRect(356, 149, 88, 28, 14).fill({ color: 16777215, alpha: 0.9 });
+  cloud.circle(358, 147, 24).fill({ color: 16777215, alpha: 0.92 });
+  cloud.circle(390, 138, 32).fill({ color: 16777215, alpha: 0.92 });
+  cloud.circle(422, 148, 22).fill({ color: 16777215, alpha: 0.92 });
+  cloud.roundRect(354, 147, 82, 28, 14).fill({ color: 16777215, alpha: 0.92 });
   tableLayer.addChild(cloud);
   const donut = new Graphics();
   donut.circle(154, 416, 44).fill({ color: 16747477 });
@@ -47912,34 +47934,46 @@ function drawTable() {
     donut.roundRect(sprinkle.x, sprinkle.y, 16, 5, 3).fill({ color: sprinkle.color });
   }
   tableLayer.addChild(donut);
-  const reactor = new Graphics();
-  reactor.roundRect(410, 392, 120, 95, 22).fill({ color: 7754495, alpha: 0.92 }).stroke({ color: 16777215, width: 5 });
-  reactor.rect(434, 360, 72, 40).fill({ color: 11071628 }).stroke({ color: 3621230, width: 4 });
-  reactor.circle(470, 452, 20).fill({ color: 16740041 });
-  reactor.circle(470, 452, 7).fill({ color: 16048970 });
-  tableLayer.addChild(reactor);
+  const tv = new Graphics();
+  tv.roundRect(350, 396, 104, 80, 18).fill({ color: 8085503, alpha: 0.94 }).stroke({ color: 16777215, width: 5 });
+  tv.roundRect(364, 410, 76, 44, 10).fill({ color: 12910485 }).stroke({ color: 3621230, width: 4 });
+  tv.rect(384, 474, 36, 10).fill({ color: 3621230 });
+  tv.rect(374, 482, 56, 8).fill({ color: 16777215, alpha: 0.7 });
+  tableLayer.addChild(tv);
   const upperLabel = new Text({
     text: "SPRINGFIELD ELEMENTARY",
     style: { fontFamily: "Arial", fontSize: 26, fontWeight: "900", fill: 2502749 }
   });
   upperLabel.position.set(124, 84);
   const launcherText = new Text({
-    text: "KWIK-E-LAUNCH",
-    style: { fontFamily: "Arial", fontSize: 22, fontWeight: "900", fill: 16777215 }
+    text: "PLUNGER LANE",
+    style: { fontFamily: "Arial", fontSize: 20, fontWeight: "900", fill: 16777215 }
   });
   launcherText.rotation = Math.PI / 2;
-  launcherText.position.set(586, 310);
+  launcherText.position.set(582, 360);
   const centerCaption = new Text({
-    text: "HIT THE FAMILY\nBUMPER PARTY",
-    style: { fontFamily: "Arial", fontSize: 33, fontWeight: "900", fill: 2437725, align: "center" }
+    text: "FLIP IT BACK TO\nSPRINGFIELD",
+    style: { fontFamily: "Arial", fontSize: 31, fontWeight: "900", fill: 2437725, align: "center" }
   });
   centerCaption.anchor.set(0.5);
-  centerCaption.position.set(310, 548);
+  centerCaption.position.set(292, 584);
   tableLayer.addChild(upperLabel, launcherText, centerCaption);
   const stars = new Graphics();
   drawStar(stars, 164, 564, 22, 10, 5, 16737996);
   drawStar(stars, 454, 574, 24, 11, 5, 7071231);
   tableLayer.addChild(stars);
+  const rails = new Graphics();
+  rails.moveTo(140, 108).lineTo(PLAYFIELD_LEFT, 198).lineTo(PLAYFIELD_LEFT, 704).lineTo(142, 828).lineTo(194, 902);
+  rails.moveTo(146, 110).lineTo(442, 110).lineTo(LAUNCH_LANE_LEFT, 150).lineTo(LAUNCH_LANE_LEFT, 894);
+  rails.moveTo(LAUNCH_LANE_RIGHT, 96).lineTo(LAUNCH_LANE_RIGHT, 930);
+  rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 196);
+  rails.moveTo(PLAYFIELD_RIGHT, 196).lineTo(PLAYFIELD_RIGHT, 704).lineTo(478, 828).lineTo(426, 902);
+  rails.moveTo(90, 720).lineTo(216, 796).lineTo(142, 828);
+  rails.moveTo(530, 720).lineTo(404, 796).lineTo(478, 828);
+  rails.moveTo(150, 932).lineTo(242, 870);
+  rails.moveTo(470, 932).lineTo(378, 870);
+  rails.stroke({ color: 16777215, width: 8, alpha: 0.85, cap: "round", join: "round" });
+  tableLayer.addChild(rails);
   for (const bumper of bumpers) {
     const ring = new Graphics();
     ring.circle(bumper.x, bumper.y, bumper.radius + 12).fill({ color: 16777215, alpha: 0.28 });
@@ -47948,22 +47982,26 @@ function drawTable() {
     tableLayer.addChild(ring);
   }
   const slings = new Graphics();
-  slings.poly([125, 728, 212, 795, 146, 812]).fill({ color: 16739766, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
-  slings.poly([495, 728, 408, 795, 474, 812]).fill({ color: 8450815, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
+  slings.poly([90, 720, 216, 796, 142, 828]).fill({ color: 16739766, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
+  slings.poly([530, 720, 404, 796, 478, 828]).fill({ color: 8450815, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
   tableLayer.addChild(slings);
 }
 function syncDrawables() {
   const ballPos = ballBody.translation();
   ballGraphic.clear();
-  ballGraphic.circle(ballPos.x, ballPos.y, BALL_RADIUS).fill({ color: 16645629 }).stroke({ color: 6976391, width: 4 });
-  ballGraphic.circle(ballPos.x - 4, ballPos.y - 4, 3).fill({ color: 16777215, alpha: 0.95 });
+  ballGraphic.circle(ballPos.x + 2, ballPos.y + 3, BALL_RADIUS + 1).fill({ color: 6252671, alpha: 0.24 });
+  ballGraphic.circle(ballPos.x, ballPos.y, BALL_RADIUS).fill({ color: 13949666 }).stroke({ color: 6910857, width: 4 });
+  ballGraphic.circle(ballPos.x - 3, ballPos.y - 4, BALL_RADIUS * 0.62).fill({ color: 16317439, alpha: 0.85 });
+  ballGraphic.circle(ballPos.x - 5, ballPos.y - 6, 4).fill({ color: 16777215, alpha: 0.98 });
   drawFlipper(leftFlipperGraphic, leftFlipperPivot.x, leftFlipperPivot.y, leftFlipperBody.rotation(), true);
   drawFlipper(rightFlipperGraphic, rightFlipperPivot.x, rightFlipperPivot.y, rightFlipperBody.rotation(), false);
 }
 function resizeScene() {
   const { width, height } = gameWrap.getBoundingClientRect();
   app.renderer.resize(width, height);
-  app.stage.scale.set(width / VIRTUAL_WIDTH, height / VIRTUAL_HEIGHT);
+  const scale = Math.min(width / VIRTUAL_WIDTH, height / VIRTUAL_HEIGHT);
+  app.stage.scale.set(scale);
+  app.stage.position.set((width - VIRTUAL_WIDTH * scale) / 2, (height - VIRTUAL_HEIGHT * scale) / 2);
   drawTable();
   syncDrawables();
 }
@@ -47980,7 +48018,6 @@ function resetGame() {
   lastSubmittedScore = null;
   replaceBall(true);
   updateHud();
-  setStatus("READY");
   setNameRowVisible(false);
   drawTable();
   updateOverlay();
@@ -48021,20 +48058,12 @@ bindFlipperButton(rightBtn, (value) => {
 launchBtn.addEventListener("click", (event) => {
   event.preventDefault();
   unlockAudio();
-  if (!running) {
-    running = true;
-    setStatus("LAUNCH");
-  }
   launchBall();
 });
 overlayActionBtn.addEventListener("click", (event) => {
   event.preventDefault();
   unlockAudio();
   if (gameOver) resetGame();
-  if (!running) {
-    running = true;
-    setStatus("LAUNCH");
-  }
   if (ballInLauncher) launchBall();
   updateOverlay();
 });
@@ -48050,10 +48079,6 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === " ") {
     event.preventDefault();
-    if (!running) {
-      running = true;
-      setStatus("LAUNCH");
-    }
     launchBall();
   }
 });
@@ -48061,13 +48086,28 @@ document.addEventListener("keyup", (event) => {
   if (event.key === "a" || event.key === "ArrowLeft") leftPressed = false;
   if (event.key === "d" || event.key === "ArrowRight") rightPressed = false;
 });
+async function fetchScores() {
+  const response = await fetch("/api/scores");
+  const data = await response.json();
+  return Array.isArray(data.scores) ? data.scores : [];
+}
+async function refreshHighScore() {
+  try {
+    const scores = await fetchScores();
+    const topScore = scores.reduce((max, entry) => Math.max(max, entry.score), 0);
+    highScore = Math.max(highScore, topScore);
+    updateHud();
+  } catch {
+  }
+}
 async function loadScores() {
   leaderboardEl.innerHTML = "";
   scoresErrorEl.classList.add("hidden");
   try {
-    const response = await fetch("/api/scores");
-    const data = await response.json();
-    const scores = Array.isArray(data.scores) ? data.scores : [];
+    const scores = await fetchScores();
+    const topScore = scores.reduce((max, entry) => Math.max(max, entry.score), 0);
+    highScore = Math.max(highScore, topScore);
+    updateHud();
     if (scores.length === 0) {
       const li = document.createElement("li");
       li.textContent = "No Springfield heroes yet.";
@@ -48093,11 +48133,23 @@ function closeScoresModal() {
   scoresModal.hidden = true;
   document.body.classList.remove("modal-open");
 }
+function openHelpModal() {
+  helpModal.hidden = false;
+  document.body.classList.add("modal-open");
+}
+function closeHelpModal() {
+  helpModal.hidden = true;
+  document.body.classList.remove("modal-open");
+}
 openScoresBtn.addEventListener("click", () => openScoresModal());
+openHelpBtn.addEventListener("click", () => openHelpModal());
 scoresModalClose.addEventListener("click", () => closeScoresModal());
 scoresModalBackdrop.addEventListener("click", () => closeScoresModal());
+helpModalClose.addEventListener("click", () => closeHelpModal());
+helpModalBackdrop.addEventListener("click", () => closeHelpModal());
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !scoresModal.hidden) closeScoresModal();
+  if (event.key === "Escape" && !helpModal.hidden) closeHelpModal();
 });
 nameInput.addEventListener("input", () => {
   submitBtn.disabled = !nameInput.value.trim() || score <= 0 || lastSubmittedScore === score;
@@ -48114,6 +48166,8 @@ submitBtn.addEventListener("click", async () => {
     });
     if (!response.ok) throw new Error("save failed");
     lastSubmittedScore = score;
+    highScore = Math.max(highScore, score);
+    updateHud();
     openScoresModal();
   } catch {
     submitBtn.disabled = false;
@@ -48121,6 +48175,7 @@ submitBtn.addEventListener("click", async () => {
   }
 });
 resetGame();
+void refreshHighScore();
 requestAnimationFrame((ts) => {
   lastFrame = ts;
   requestAnimationFrame(animate);
