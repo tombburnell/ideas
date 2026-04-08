@@ -47571,12 +47571,14 @@ for (const list of Object.values(sounds)) {
   }
 }
 sounds.drain[0].volume = 0.75;
-var leftFlipperPivot = { x: 222, y: 860 };
-var rightFlipperPivot = { x: 398, y: 860 };
-var leftFlipperRest = 0.42;
-var leftFlipperActive = -0.32;
-var rightFlipperRest = -0.42;
-var rightFlipperActive = 0.32;
+var leftFlipperPivot = { x: 202, y: 860 };
+var rightFlipperPivot = { x: 418, y: 860 };
+var FLIPPER_HALF_LENGTH = 56;
+var FLIPPER_HALF_THICKNESS = 12;
+var leftFlipperRest = 0.68;
+var leftFlipperActive = -0.18;
+var rightFlipperRest = -0.68;
+var rightFlipperActive = 0.18;
 var leftFlipperBody = world.createRigidBody(
   cg.RigidBodyDesc.kinematicPositionBased().setTranslation(leftFlipperPivot.x, leftFlipperPivot.y)
 );
@@ -47586,11 +47588,11 @@ var rightFlipperBody = world.createRigidBody(
 leftFlipperBody.setRotation(leftFlipperRest, true);
 rightFlipperBody.setRotation(rightFlipperRest, true);
 world.createCollider(
-  cg.ColliderDesc.capsule(12, 58).setMass(8).setRestitution(0.15).setFriction(0.05),
+  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(FLIPPER_HALF_LENGTH, 0).setRestitution(0.15).setFriction(0.05),
   leftFlipperBody
 );
 world.createCollider(
-  cg.ColliderDesc.capsule(12, 58).setMass(8).setRestitution(0.15).setFriction(0.05),
+  cg.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS).setTranslation(-FLIPPER_HALF_LENGTH, 0).setRestitution(0.15).setFriction(0.05),
   rightFlipperBody
 );
 var score = 0;
@@ -47659,15 +47661,6 @@ function addSensorRect(x3, y3, hw, hh, tag) {
   colliderTags.set(collider.handle, tag);
   return collider.handle;
 }
-function addSensorBall(x3, y3, radius, tag) {
-  const body = world.createRigidBody(cg.RigidBodyDesc.fixed().setTranslation(x3, y3));
-  const collider = world.createCollider(
-    cg.ColliderDesc.ball(radius).setSensor(true).setActiveEvents(cg.ActiveEvents.COLLISION_EVENTS),
-    body
-  );
-  colliderTags.set(collider.handle, tag);
-  return collider.handle;
-}
 var bumpers = [
   addBumper(200, 325, 34, 125),
   addBumper(310, 250, 36, 150),
@@ -47687,15 +47680,13 @@ addStaticSegment([524, 154], [PLAYFIELD_RIGHT, 214], 0.42);
 addStaticSegment([PLAYFIELD_RIGHT, 214], [PLAYFIELD_RIGHT, 684], 0.22);
 addStaticSegment([PLAYFIELD_RIGHT, 684], [462, 818], 0.2);
 addStaticSegment([462, 818], [418, 902], 0.18);
-addStaticSegment([100, 724], [214, 792], 0.36, 0.06);
-addStaticSegment([500, 724], [386, 792], 0.36, 0.06);
-addStaticSegment([138, 932], [224, 884], 0.15);
-addStaticSegment([466, 932], [396, 884], 0.15);
+addStaticSegment([96, 724], [196, 784], 0.36, 0.06);
+addStaticSegment([524, 724], [424, 784], 0.36, 0.06);
+addStaticSegment([126, 932], [210, 892], 0.15);
+addStaticSegment([494, 932], [410, 892], 0.15);
 addSensorRect(310, 938, 102, 20, { type: "drain" });
 laneHandles.push(addSensorRect(150, 212, 42, 16, { type: "lane", points: 150 }));
 laneHandles.push(addSensorRect(470, 212, 42, 16, { type: "lane", points: 150 }));
-addSensorBall(174, 780, 34, { type: "slingshot", points: 25 });
-addSensorBall(432, 780, 34, { type: "slingshot", points: 25 });
 function createBall(inLauncher) {
   const body = world.createRigidBody(
     cg.RigidBodyDesc.dynamic().setTranslation(inLauncher ? LAUNCH_LANE_CENTER : 458, inLauncher ? LAUNCH_REST_Y : 205).setLinearDamping(0.12).setAngularDamping(0.2).setCcdEnabled(true)
@@ -47868,12 +47859,6 @@ function stepPhysics(deltaMs) {
     if (!ballInLauncher && pos.y > VIRTUAL_HEIGHT + 100) {
       drainBall();
     }
-    if (leftPressed && pos.y > 770 && pos.x < 300) {
-      ballBody.applyImpulse({ x: 22, y: -34 }, true);
-    }
-    if (rightPressed && pos.y > 770 && pos.x > 320) {
-      ballBody.applyImpulse({ x: -22, y: -34 }, true);
-    }
   }
 }
 function drawFlipper(graphic, x3, y3, rotation, isLeft) {
@@ -47911,10 +47896,10 @@ function drawTable() {
   tableLayer.addChild(bg);
   const logo = Sprite.from("/assets/simpsons-logo.svg");
   logo.anchor.set(0.5);
-  logo.position.set(300, 710);
-  logo.width = 350;
-  logo.height = 140;
-  logo.alpha = 0.16;
+  logo.position.set(300, 680);
+  logo.width = 380;
+  logo.height = 152;
+  logo.alpha = 0.26;
   tableLayer.addChild(logo);
   const lanePanel = new Graphics();
   lanePanel.roundRect(118, 138, 332, 72, 28).fill({ color: 16774603 }).stroke({ color: 3621230, width: 4 });
@@ -47983,10 +47968,10 @@ function drawTable() {
   rails.moveTo(LAUNCH_LANE_RIGHT, 96).lineTo(LAUNCH_LANE_RIGHT, 930);
   rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 150);
   rails.moveTo(470, 110).lineTo(500, 124).lineTo(524, 154).lineTo(PLAYFIELD_RIGHT, 214).lineTo(PLAYFIELD_RIGHT, 684).lineTo(462, 818).lineTo(418, 902);
-  rails.moveTo(90, 720).lineTo(216, 796).lineTo(142, 828);
-  rails.moveTo(510, 720).lineTo(388, 796).lineTo(462, 818);
-  rails.moveTo(150, 932).lineTo(242, 870);
-  rails.moveTo(454, 932).lineTo(370, 870);
+  rails.moveTo(96, 724).lineTo(196, 784).lineTo(142, 828);
+  rails.moveTo(524, 724).lineTo(424, 784).lineTo(462, 818);
+  rails.moveTo(126, 932).lineTo(210, 892);
+  rails.moveTo(494, 932).lineTo(410, 892);
   rails.stroke({ color: 16777215, width: 8, alpha: 0.85, cap: "round", join: "round" });
   tableLayer.addChild(rails);
   for (const bumper of bumpers) {
@@ -47997,8 +47982,8 @@ function drawTable() {
     tableLayer.addChild(ring);
   }
   const slings = new Graphics();
-  slings.poly([90, 720, 216, 796, 142, 828]).fill({ color: 16739766, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
-  slings.poly([510, 720, 388, 796, 462, 818]).fill({ color: 8450815, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
+  slings.poly([96, 724, 196, 784, 142, 828]).fill({ color: 16739766, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
+  slings.poly([524, 724, 424, 784, 462, 818]).fill({ color: 8450815, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
   tableLayer.addChild(slings);
 }
 function syncDrawables() {
