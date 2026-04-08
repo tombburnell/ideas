@@ -47609,6 +47609,7 @@ var lastFrame = performance.now();
 var drainPending = false;
 var leftLaneLit = false;
 var rightLaneLit = false;
+var ballInProtectedLaunchLane = false;
 var ballBody = createBall(true);
 var laneHandles = [];
 function playSound(key) {
@@ -47680,18 +47681,18 @@ addStaticSegment([146, 110], [452, 110], 0.45);
 addStaticSegment([LAUNCH_LANE_LEFT, 110], [LAUNCH_LANE_LEFT, 922], 0.15);
 addStaticSegment([LAUNCH_LANE_RIGHT, 96], [LAUNCH_LANE_RIGHT, 930], 0.2);
 addStaticSegment([PLAYFIELD_RIGHT, 110], [LAUNCH_LANE_RIGHT, 150], 0.45);
-addStaticSegment([PLAYFIELD_RIGHT, 196], [PLAYFIELD_RIGHT, 704], 0.22);
-addStaticSegment([PLAYFIELD_RIGHT, 704], [478, 828], 0.2);
-addStaticSegment([478, 828], [426, 902], 0.18);
+addStaticSegment([PLAYFIELD_RIGHT, 196], [PLAYFIELD_RIGHT, 684], 0.22);
+addStaticSegment([PLAYFIELD_RIGHT, 684], [462, 818], 0.2);
+addStaticSegment([462, 818], [418, 902], 0.18);
 addStaticSegment([90, 720], [216, 796], 0.36, 0.06);
-addStaticSegment([530, 720], [404, 796], 0.36, 0.06);
+addStaticSegment([510, 720], [388, 796], 0.36, 0.06);
 addStaticSegment([150, 932], [242, 870], 0.15);
-addStaticSegment([470, 932], [378, 870], 0.15);
+addStaticSegment([454, 932], [370, 870], 0.15);
 addSensorRect(310, 938, 102, 20, { type: "drain" });
 laneHandles.push(addSensorRect(150, 212, 42, 16, { type: "lane", points: 150 }));
 laneHandles.push(addSensorRect(470, 212, 42, 16, { type: "lane", points: 150 }));
 addSensorBall(176, 780, 34, { type: "slingshot", points: 25 });
-addSensorBall(444, 780, 34, { type: "slingshot", points: 25 });
+addSensorBall(430, 780, 34, { type: "slingshot", points: 25 });
 function createBall(inLauncher) {
   const body = world.createRigidBody(
     cg.RigidBodyDesc.dynamic().setTranslation(inLauncher ? LAUNCH_LANE_CENTER : 458, inLauncher ? LAUNCH_REST_Y : 205).setLinearDamping(0.12).setAngularDamping(0.2).setCcdEnabled(true)
@@ -47709,6 +47710,7 @@ function replaceBall(inLauncher) {
   world.removeRigidBody(ballBody);
   ballBody = createBall(inLauncher);
   ballInLauncher = inLauncher;
+  ballInProtectedLaunchLane = false;
   drainPending = false;
 }
 function updateHud() {
@@ -47773,8 +47775,9 @@ function launchBall() {
   }
   if (!ballInLauncher) return;
   ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: LAUNCH_REST_Y }, true);
-  ballBody.setLinvel({ x: 0, y: -2850 }, true);
+  ballBody.setLinvel({ x: 0, y: -3200 }, true);
   ballInLauncher = false;
+  ballInProtectedLaunchLane = true;
   updateOverlay();
   playSound("launch");
 }
@@ -47847,7 +47850,16 @@ function stepPhysics(deltaMs) {
       ballBody.setLinvel({ x: 0, y: 0 }, true);
       ballBody.setAngvel(0, true);
     }
-    if (!ballInLauncher && pos.x > LAUNCH_LANE_LEFT + 4 && pos.x < LAUNCH_LANE_RIGHT - 4) {
+    if (ballInProtectedLaunchLane) {
+      const currentVel = ballBody.linvel();
+      ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: pos.y }, true);
+      ballBody.setLinvel({ x: 0, y: Math.min(currentVel.y, -3e3) }, true);
+      ballBody.setAngvel(0, true);
+      if (pos.y <= LAUNCH_GATE_Y) {
+        ballInProtectedLaunchLane = false;
+        ballBody.setLinvel({ x: -620, y: -2480 }, true);
+      }
+    } else if (!ballInLauncher && pos.x > LAUNCH_LANE_LEFT + 4 && pos.x < LAUNCH_LANE_RIGHT - 4) {
       if (pos.y < LAUNCH_GATE_Y) {
         ballBody.applyImpulse({ x: -110, y: -22 }, true);
       }
@@ -47974,11 +47986,11 @@ function drawTable() {
   rails.moveTo(LAUNCH_LANE_LEFT, 110).lineTo(LAUNCH_LANE_LEFT, 922);
   rails.moveTo(LAUNCH_LANE_RIGHT, 96).lineTo(LAUNCH_LANE_RIGHT, 930);
   rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 150);
-  rails.moveTo(PLAYFIELD_RIGHT, 196).lineTo(PLAYFIELD_RIGHT, 704).lineTo(478, 828).lineTo(426, 902);
+  rails.moveTo(PLAYFIELD_RIGHT, 196).lineTo(PLAYFIELD_RIGHT, 684).lineTo(462, 818).lineTo(418, 902);
   rails.moveTo(90, 720).lineTo(216, 796).lineTo(142, 828);
-  rails.moveTo(530, 720).lineTo(404, 796).lineTo(478, 828);
+  rails.moveTo(510, 720).lineTo(388, 796).lineTo(462, 818);
   rails.moveTo(150, 932).lineTo(242, 870);
-  rails.moveTo(470, 932).lineTo(378, 870);
+  rails.moveTo(454, 932).lineTo(370, 870);
   rails.stroke({ color: 16777215, width: 8, alpha: 0.85, cap: "round", join: "round" });
   tableLayer.addChild(rails);
   for (const bumper of bumpers) {
@@ -47990,7 +48002,7 @@ function drawTable() {
   }
   const slings = new Graphics();
   slings.poly([90, 720, 216, 796, 142, 828]).fill({ color: 16739766, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
-  slings.poly([530, 720, 404, 796, 478, 828]).fill({ color: 8450815, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
+  slings.poly([510, 720, 388, 796, 462, 818]).fill({ color: 8450815, alpha: 0.82 }).stroke({ color: 16777215, width: 4 });
   tableLayer.addChild(slings);
 }
 function syncDrawables() {
