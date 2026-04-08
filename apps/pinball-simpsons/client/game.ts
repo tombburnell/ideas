@@ -15,10 +15,15 @@ const BALL_RADIUS = 13;
 const BASE_BALLS = 3;
 const EXTRA_BALL_THRESHOLDS = [1500, 3500];
 const FIXED_STEP = 1 / 60;
+const PLAYFIELD_LEFT = 82;
+const PLAYFIELD_RIGHT = 538;
+const LAUNCH_LANE_LEFT = 484;
+const LAUNCH_LANE_RIGHT = 560;
+const LAUNCH_LANE_CENTER = 522;
 
 const scoreEl = document.getElementById("score") as HTMLElement;
 const ballsEl = document.getElementById("balls") as HTMLElement;
-const statusEl = document.getElementById("status") as HTMLElement;
+const highScoreEl = document.getElementById("highScore") as HTMLElement;
 const overlay = document.getElementById("boardOverlay") as HTMLElement;
 const overlayMessage = document.getElementById("overlayMessage") as HTMLElement;
 const overlayActionBtn = document.getElementById("overlayActionBtn") as HTMLButtonElement;
@@ -35,6 +40,10 @@ const scoresModal = document.getElementById("scoresModal") as HTMLElement;
 const openScoresBtn = document.getElementById("openScoresBtn") as HTMLButtonElement;
 const scoresModalClose = document.getElementById("scoresModalClose") as HTMLButtonElement;
 const scoresModalBackdrop = document.getElementById("scoresModalBackdrop") as HTMLButtonElement;
+const helpModal = document.getElementById("helpModal") as HTMLElement;
+const openHelpBtn = document.getElementById("openHelpBtn") as HTMLButtonElement;
+const helpModalClose = document.getElementById("helpModalClose") as HTMLButtonElement;
+const helpModalBackdrop = document.getElementById("helpModalBackdrop") as HTMLButtonElement;
 
 const app = new PIXI.Application();
 await app.init({ backgroundAlpha: 0, antialias: true, resizeTo: gameWrap });
@@ -72,8 +81,8 @@ const leftFlipperPivot = { x: 210, y: 860 };
 const rightFlipperPivot = { x: 410, y: 860 };
 const leftFlipperRest = -0.35;
 const leftFlipperActive = -1.02;
-const rightFlipperRest = Math.PI + 0.35;
-const rightFlipperActive = Math.PI + 1.02;
+const rightFlipperRest = 0.35;
+const rightFlipperActive = 1.02;
 const leftFlipperBody = world.createRigidBody(
   RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(leftFlipperPivot.x, leftFlipperPivot.y)
 );
@@ -92,6 +101,7 @@ world.createCollider(
 );
 
 let score = 0;
+let highScore = 0;
 let ballsRemaining = BASE_BALLS;
 let awardedExtraBalls = 0;
 let running = false;
@@ -185,32 +195,36 @@ const bumpers = [
   addBumper(420, 335, 34, 125),
 ];
 
-addStaticSegment([112, 110], [82, 295], 0.35);
-addStaticSegment([82, 295], [118, 615], 0.25);
-addStaticSegment([508, 110], [538, 295], 0.35);
-addStaticSegment([538, 295], [502, 615], 0.25);
-addStaticSegment([118, 615], [165, 820], 0.2);
-addStaticSegment([502, 615], [455, 820], 0.2);
-addStaticSegment([165, 820], [195, 900], 0.2);
-addStaticSegment([455, 820], [425, 900], 0.2);
-addStaticSegment([145, 110], [475, 110], 0.45);
-addStaticSegment([480, 110], [538, 190], 0.45);
-addStaticSegment([82, 190], [140, 110], 0.45);
-addStaticSegment([155, 930], [242, 870], 0.15);
-addStaticSegment([465, 930], [378, 870], 0.15);
-addStaticSegment([475, 145], [475, 895], 0.15);
-addStaticSegment([560, 95], [560, 930], 0.2);
-addStaticSegment([475, 895], [560, 930], 0.2);
-addSensorRect(520, 930, 60, 20, { type: "drain" });
+addStaticSegment([140, 108], [PLAYFIELD_LEFT, 198], 0.45);
+addStaticSegment([PLAYFIELD_LEFT, 198], [PLAYFIELD_LEFT, 704], 0.22);
+addStaticSegment([PLAYFIELD_LEFT, 704], [142, 828], 0.2);
+addStaticSegment([142, 828], [194, 902], 0.18);
+
+addStaticSegment([146, 110], [442, 110], 0.45);
+addStaticSegment([442, 110], [LAUNCH_LANE_LEFT, 150], 0.35);
+addStaticSegment([LAUNCH_LANE_LEFT, 150], [LAUNCH_LANE_LEFT, 894], 0.15);
+
+addStaticSegment([LAUNCH_LANE_RIGHT, 96], [LAUNCH_LANE_RIGHT, 930], 0.2);
+addStaticSegment([PLAYFIELD_RIGHT, 110], [LAUNCH_LANE_RIGHT, 196], 0.45);
+addStaticSegment([PLAYFIELD_RIGHT, 196], [PLAYFIELD_RIGHT, 704], 0.22);
+addStaticSegment([PLAYFIELD_RIGHT, 704], [478, 828], 0.2);
+addStaticSegment([478, 828], [426, 902], 0.18);
+
+addStaticSegment([90, 720], [216, 796], 0.36, 0.06);
+addStaticSegment([530, 720], [404, 796], 0.36, 0.06);
+addStaticSegment([150, 932], [242, 870], 0.15);
+addStaticSegment([470, 932], [378, 870], 0.15);
+
+addSensorRect(310, 938, 102, 20, { type: "drain" });
 laneHandles.push(addSensorRect(150, 212, 42, 16, { type: "lane", points: 150 }));
 laneHandles.push(addSensorRect(470, 212, 42, 16, { type: "lane", points: 150 }));
-addSensorBall(210, 324, 38, { type: "slingshot", points: 25 });
-addSensorBall(410, 324, 38, { type: "slingshot", points: 25 });
+addSensorBall(176, 780, 34, { type: "slingshot", points: 25 });
+addSensorBall(444, 780, 34, { type: "slingshot", points: 25 });
 
 function createBall(inLauncher: boolean) {
   const body = world.createRigidBody(
     RAPIER.RigidBodyDesc.dynamic()
-      .setTranslation(inLauncher ? 520 : 500, inLauncher ? 855 : 735)
+      .setTranslation(inLauncher ? LAUNCH_LANE_CENTER : 458, inLauncher ? 855 : 205)
       .setLinearDamping(0.12)
       .setAngularDamping(0.2)
       .setCcdEnabled(true)
@@ -239,10 +253,7 @@ function replaceBall(inLauncher: boolean) {
 function updateHud() {
   scoreEl.textContent = String(score);
   ballsEl.textContent = String(ballsRemaining);
-}
-
-function setStatus(text: string) {
-  statusEl.textContent = text;
+  highScoreEl.textContent = String(highScore);
 }
 
 function setNameRowVisible(visible: boolean) {
@@ -289,11 +300,11 @@ function triggerBurst(color: number, x: number, y: number) {
 
 function awardPoints(points: number) {
   score += points;
+  highScore = Math.max(highScore, score);
   for (let i = awardedExtraBalls; i < EXTRA_BALL_THRESHOLDS.length; i += 1) {
     if (score >= EXTRA_BALL_THRESHOLDS[i]) {
       ballsRemaining += 1;
       awardedExtraBalls += 1;
-      setStatus("EXTRA BALL");
       triggerBurst(i % 2 === 0 ? 0xff62cc : 0x73e5ff, 310, 330);
     }
   }
@@ -305,9 +316,9 @@ function launchBall() {
     running = true;
   }
   if (!ballInLauncher) return;
-  ballBody.setLinvel({ x: -180 - Math.random() * 50, y: -1580 - Math.random() * 120 }, true);
+  ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: 855 }, true);
+  ballBody.setLinvel({ x: 0, y: -2300 }, true);
   ballInLauncher = false;
-  setStatus("PLAY");
   updateOverlay();
   playSound("launch");
 }
@@ -321,7 +332,6 @@ function drainBall() {
   if (ballsRemaining <= 0) {
     running = false;
     gameOver = true;
-    setStatus("GAME OVER");
     setNameRowVisible(true);
     submitBtn.disabled = score <= 0 || lastSubmittedScore === score;
     updateOverlay();
@@ -330,7 +340,6 @@ function drainBall() {
   window.setTimeout(() => {
     replaceBall(true);
     running = true;
-    setStatus("LAUNCH");
     updateOverlay();
   }, 900);
 }
@@ -380,16 +389,23 @@ function stepPhysics(deltaMs: number) {
       if (tag2?.type === "ball" && tag1) handleCollision(tag1, h1);
     });
     const pos = ballBody.translation();
-    if (!ballInLauncher && pos.x > 474 && pos.y < 170) {
-      ballBody.applyImpulse({ x: -60, y: 0 }, true);
+    if (!ballInLauncher && pos.x > LAUNCH_LANE_LEFT + 4 && pos.x < LAUNCH_LANE_RIGHT - 4) {
+      if (pos.y < 205) {
+        ballBody.applyImpulse({ x: -72, y: -18 }, true);
+      }
+      if (pos.x < LAUNCH_LANE_LEFT + BALL_RADIUS + 3) {
+        ballBody.setTranslation({ x: LAUNCH_LANE_LEFT + BALL_RADIUS + 4, y: pos.y }, true);
+      } else if (pos.x > LAUNCH_LANE_RIGHT - BALL_RADIUS - 3) {
+        ballBody.setTranslation({ x: LAUNCH_LANE_RIGHT - BALL_RADIUS - 4, y: pos.y }, true);
+      }
     }
     if (!ballInLauncher && pos.y > VIRTUAL_HEIGHT + 100) {
       drainBall();
     }
-    if (leftPressed && pos.y > 770 && pos.x < 290) {
+    if (leftPressed && pos.y > 770 && pos.x < 300) {
       ballBody.applyImpulse({ x: 22, y: -34 }, true);
     }
-    if (rightPressed && pos.y > 770 && pos.x > 330) {
+    if (rightPressed && pos.y > 770 && pos.x > 320) {
       ballBody.applyImpulse({ x: -22, y: -34 }, true);
     }
   }
@@ -424,16 +440,29 @@ function drawStar(g: PIXI.Graphics, x: number, y: number, r1: number, r2: number
 function drawTable() {
   tableLayer.removeChildren();
   const bg = new PIXI.Graphics();
-  bg.roundRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, 28).fill({ color: 0x8ad9ff });
-  bg.rect(0, 330, VIRTUAL_WIDTH, 670).fill({ color: 0xf5c529 });
-  bg.rect(0, 0, VIRTUAL_WIDTH, 125).fill({ color: 0x7ec8ff });
-  bg.roundRect(96, 94, 428, 220, 48).fill({ color: 0xf9efaa, alpha: 0.9 });
-  bg.roundRect(74, 76, 472, 870, 34).stroke({ color: 0xffffff, width: 10, alpha: 0.45 });
-  bg.roundRect(92, 94, 436, 834, 28).stroke({ color: 0x20274a, width: 6, alpha: 0.42 });
+  bg.roundRect(0, 0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, 28).fill({ color: 0x84d8ff });
+  bg.rect(0, 0, VIRTUAL_WIDTH, 210).fill({ color: 0x8edaff });
+  bg.rect(0, 210, VIRTUAL_WIDTH, 790).fill({ color: 0xf2c72f });
+  bg.roundRect(70, 78, 478, 870, 36).stroke({ color: 0xffffff, width: 10, alpha: 0.5 });
+  bg.roundRect(PLAYFIELD_LEFT, 96, PLAYFIELD_RIGHT - PLAYFIELD_LEFT, 832, 28)
+    .fill({ color: 0xf6d558, alpha: 0.35 })
+    .stroke({ color: 0x20274a, width: 6, alpha: 0.42 });
+  bg.roundRect(LAUNCH_LANE_LEFT, 96, LAUNCH_LANE_RIGHT - LAUNCH_LANE_LEFT, 832, 22)
+    .fill({ color: 0x9ee7ff, alpha: 0.62 })
+    .stroke({ color: 0xffffff, width: 4, alpha: 0.85 });
   tableLayer.addChild(bg);
 
+  const logo = PIXI.Sprite.from("/assets/simpsons-logo.svg");
+  logo.anchor.set(0.5);
+  logo.position.set(300, 710);
+  logo.width = 350;
+  logo.height = 140;
+  logo.alpha = 0.16;
+  tableLayer.addChild(logo);
+
   const lanePanel = new PIXI.Graphics();
-  lanePanel.roundRect(118, 138, 384, 72, 28).fill({ color: 0xfff5cb }).stroke({ color: 0x37416e, width: 4 });
+  lanePanel.roundRect(118, 138, 332, 72, 28).fill({ color: 0xfff5cb }).stroke({ color: 0x37416e, width: 4 });
+  lanePanel.roundRect(LAUNCH_LANE_LEFT + 6, 132, 60, 166, 24).fill({ color: 0xffffff, alpha: 0.18 });
   tableLayer.addChild(lanePanel, makeLight(150, 212, leftLaneLit), makeLight(470, 212, rightLaneLit));
 
   const chalkboard = new PIXI.Graphics();
@@ -448,10 +477,10 @@ function drawTable() {
   tableLayer.addChild(chalkboard, chalkText);
 
   const cloud = new PIXI.Graphics();
-  cloud.circle(360, 147, 26).fill({ color: 0xffffff, alpha: 0.9 });
-  cloud.circle(394, 138, 34).fill({ color: 0xffffff, alpha: 0.9 });
-  cloud.circle(428, 149, 24).fill({ color: 0xffffff, alpha: 0.9 });
-  cloud.roundRect(356, 149, 88, 28, 14).fill({ color: 0xffffff, alpha: 0.9 });
+  cloud.circle(358, 147, 24).fill({ color: 0xffffff, alpha: 0.92 });
+  cloud.circle(390, 138, 32).fill({ color: 0xffffff, alpha: 0.92 });
+  cloud.circle(422, 148, 22).fill({ color: 0xffffff, alpha: 0.92 });
+  cloud.roundRect(354, 147, 82, 28, 14).fill({ color: 0xffffff, alpha: 0.92 });
   tableLayer.addChild(cloud);
 
   const donut = new PIXI.Graphics();
@@ -467,12 +496,12 @@ function drawTable() {
   }
   tableLayer.addChild(donut);
 
-  const reactor = new PIXI.Graphics();
-  reactor.roundRect(410, 392, 120, 95, 22).fill({ color: 0x7652ff, alpha: 0.92 }).stroke({ color: 0xffffff, width: 5 });
-  reactor.rect(434, 360, 72, 40).fill({ color: 0xa8f08c }).stroke({ color: 0x37416e, width: 4 });
-  reactor.circle(470, 452, 20).fill({ color: 0xff6ec9 });
-  reactor.circle(470, 452, 7).fill({ color: 0xf4e34a });
-  tableLayer.addChild(reactor);
+  const tv = new PIXI.Graphics();
+  tv.roundRect(350, 396, 104, 80, 18).fill({ color: 0x7b5fff, alpha: 0.94 }).stroke({ color: 0xffffff, width: 5 });
+  tv.roundRect(364, 410, 76, 44, 10).fill({ color: 0xc4ff95 }).stroke({ color: 0x37416e, width: 4 });
+  tv.rect(384, 474, 36, 10).fill({ color: 0x37416e });
+  tv.rect(374, 482, 56, 8).fill({ color: 0xffffff, alpha: 0.7 });
+  tableLayer.addChild(tv);
 
   const upperLabel = new PIXI.Text({
     text: "SPRINGFIELD ELEMENTARY",
@@ -480,23 +509,36 @@ function drawTable() {
   });
   upperLabel.position.set(124, 84);
   const launcherText = new PIXI.Text({
-    text: "KWIK-E-LAUNCH",
-    style: { fontFamily: "Arial", fontSize: 22, fontWeight: "900", fill: 0xffffff },
+    text: "PLUNGER LANE",
+    style: { fontFamily: "Arial", fontSize: 20, fontWeight: "900", fill: 0xffffff },
   });
   launcherText.rotation = Math.PI / 2;
-  launcherText.position.set(586, 310);
+  launcherText.position.set(582, 360);
   const centerCaption = new PIXI.Text({
-    text: "HIT THE FAMILY\nBUMPER PARTY",
-    style: { fontFamily: "Arial", fontSize: 33, fontWeight: "900", fill: 0x25325d, align: "center" },
+    text: "FLIP IT BACK TO\nSPRINGFIELD",
+    style: { fontFamily: "Arial", fontSize: 31, fontWeight: "900", fill: 0x25325d, align: "center" },
   });
   centerCaption.anchor.set(0.5);
-  centerCaption.position.set(310, 548);
+  centerCaption.position.set(292, 584);
   tableLayer.addChild(upperLabel, launcherText, centerCaption);
 
   const stars = new PIXI.Graphics();
   drawStar(stars, 164, 564, 22, 10, 5, 0xff66cc);
   drawStar(stars, 454, 574, 24, 11, 5, 0x6be5ff);
   tableLayer.addChild(stars);
+
+  const rails = new PIXI.Graphics();
+  rails.moveTo(140, 108).lineTo(PLAYFIELD_LEFT, 198).lineTo(PLAYFIELD_LEFT, 704).lineTo(142, 828).lineTo(194, 902);
+  rails.moveTo(146, 110).lineTo(442, 110).lineTo(LAUNCH_LANE_LEFT, 150).lineTo(LAUNCH_LANE_LEFT, 894);
+  rails.moveTo(LAUNCH_LANE_RIGHT, 96).lineTo(LAUNCH_LANE_RIGHT, 930);
+  rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 196);
+  rails.moveTo(PLAYFIELD_RIGHT, 196).lineTo(PLAYFIELD_RIGHT, 704).lineTo(478, 828).lineTo(426, 902);
+  rails.moveTo(90, 720).lineTo(216, 796).lineTo(142, 828);
+  rails.moveTo(530, 720).lineTo(404, 796).lineTo(478, 828);
+  rails.moveTo(150, 932).lineTo(242, 870);
+  rails.moveTo(470, 932).lineTo(378, 870);
+  rails.stroke({ color: 0xffffff, width: 8, alpha: 0.85, cap: "round", join: "round" });
+  tableLayer.addChild(rails);
 
   for (const bumper of bumpers) {
     const ring = new PIXI.Graphics();
@@ -507,16 +549,18 @@ function drawTable() {
   }
 
   const slings = new PIXI.Graphics();
-  slings.poly([125, 728, 212, 795, 146, 812]).fill({ color: 0xff6db6, alpha: 0.82 }).stroke({ color: 0xffffff, width: 4 });
-  slings.poly([495, 728, 408, 795, 474, 812]).fill({ color: 0x80f2ff, alpha: 0.82 }).stroke({ color: 0xffffff, width: 4 });
+  slings.poly([90, 720, 216, 796, 142, 828]).fill({ color: 0xff6db6, alpha: 0.82 }).stroke({ color: 0xffffff, width: 4 });
+  slings.poly([530, 720, 404, 796, 478, 828]).fill({ color: 0x80f2ff, alpha: 0.82 }).stroke({ color: 0xffffff, width: 4 });
   tableLayer.addChild(slings);
 }
 
 function syncDrawables() {
   const ballPos = ballBody.translation();
   ballGraphic.clear();
-  ballGraphic.circle(ballPos.x, ballPos.y, BALL_RADIUS).fill({ color: 0xfdfdfd }).stroke({ color: 0x6a7387, width: 4 });
-  ballGraphic.circle(ballPos.x - 4, ballPos.y - 4, 3).fill({ color: 0xffffff, alpha: 0.95 });
+  ballGraphic.circle(ballPos.x + 2, ballPos.y + 3, BALL_RADIUS + 1).fill({ color: 0x5f687f, alpha: 0.24 });
+  ballGraphic.circle(ballPos.x, ballPos.y, BALL_RADIUS).fill({ color: 0xd4dae2 }).stroke({ color: 0x697389, width: 4 });
+  ballGraphic.circle(ballPos.x - 3, ballPos.y - 4, BALL_RADIUS * 0.62).fill({ color: 0xf8fbff, alpha: 0.85 });
+  ballGraphic.circle(ballPos.x - 5, ballPos.y - 6, 4).fill({ color: 0xffffff, alpha: 0.98 });
   drawFlipper(leftFlipperGraphic, leftFlipperPivot.x, leftFlipperPivot.y, leftFlipperBody.rotation(), true);
   drawFlipper(rightFlipperGraphic, rightFlipperPivot.x, rightFlipperPivot.y, rightFlipperBody.rotation(), false);
 }
@@ -524,7 +568,9 @@ function syncDrawables() {
 function resizeScene() {
   const { width, height } = gameWrap.getBoundingClientRect();
   app.renderer.resize(width, height);
-  app.stage.scale.set(width / VIRTUAL_WIDTH, height / VIRTUAL_HEIGHT);
+  const scale = Math.min(width / VIRTUAL_WIDTH, height / VIRTUAL_HEIGHT);
+  app.stage.scale.set(scale);
+  app.stage.position.set((width - VIRTUAL_WIDTH * scale) / 2, (height - VIRTUAL_HEIGHT * scale) / 2);
   drawTable();
   syncDrawables();
 }
@@ -542,7 +588,6 @@ function resetGame() {
   lastSubmittedScore = null;
   replaceBall(true);
   updateHud();
-  setStatus("READY");
   setNameRowVisible(false);
   drawTable();
   updateOverlay();
@@ -588,10 +633,6 @@ bindFlipperButton(rightBtn, (value) => {
 launchBtn.addEventListener("click", (event) => {
   event.preventDefault();
   unlockAudio();
-  if (!running) {
-    running = true;
-    setStatus("LAUNCH");
-  }
   launchBall();
 });
 
@@ -599,10 +640,6 @@ overlayActionBtn.addEventListener("click", (event) => {
   event.preventDefault();
   unlockAudio();
   if (gameOver) resetGame();
-  if (!running) {
-    running = true;
-    setStatus("LAUNCH");
-  }
   if (ballInLauncher) launchBall();
   updateOverlay();
 });
@@ -619,10 +656,6 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === " ") {
     event.preventDefault();
-    if (!running) {
-      running = true;
-      setStatus("LAUNCH");
-    }
     launchBall();
   }
 });
@@ -632,13 +665,36 @@ document.addEventListener("keyup", (event) => {
   if (event.key === "d" || event.key === "ArrowRight") rightPressed = false;
 });
 
+type ScoreEntry = {
+  playerName: string;
+  score: number;
+};
+
+async function fetchScores() {
+  const response = await fetch("/api/scores");
+  const data = await response.json();
+  return Array.isArray(data.scores) ? (data.scores as ScoreEntry[]) : [];
+}
+
+async function refreshHighScore() {
+  try {
+    const scores = await fetchScores();
+    const topScore = scores.reduce((max, entry) => Math.max(max, entry.score), 0);
+    highScore = Math.max(highScore, topScore);
+    updateHud();
+  } catch {
+    // Keep the live score as the fallback high score if the API is unavailable.
+  }
+}
+
 async function loadScores() {
   leaderboardEl.innerHTML = "";
   scoresErrorEl.classList.add("hidden");
   try {
-    const response = await fetch("/api/scores");
-    const data = await response.json();
-    const scores = Array.isArray(data.scores) ? data.scores : [];
+    const scores = await fetchScores();
+    const topScore = scores.reduce((max, entry) => Math.max(max, entry.score), 0);
+    highScore = Math.max(highScore, topScore);
+    updateHud();
     if (scores.length === 0) {
       const li = document.createElement("li");
       li.textContent = "No Springfield heroes yet.";
@@ -667,11 +723,25 @@ function closeScoresModal() {
   document.body.classList.remove("modal-open");
 }
 
+function openHelpModal() {
+  helpModal.hidden = false;
+  document.body.classList.add("modal-open");
+}
+
+function closeHelpModal() {
+  helpModal.hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
 openScoresBtn.addEventListener("click", () => openScoresModal());
+openHelpBtn.addEventListener("click", () => openHelpModal());
 scoresModalClose.addEventListener("click", () => closeScoresModal());
 scoresModalBackdrop.addEventListener("click", () => closeScoresModal());
+helpModalClose.addEventListener("click", () => closeHelpModal());
+helpModalBackdrop.addEventListener("click", () => closeHelpModal());
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !scoresModal.hidden) closeScoresModal();
+  if (event.key === "Escape" && !helpModal.hidden) closeHelpModal();
 });
 
 nameInput.addEventListener("input", () => {
@@ -690,6 +760,8 @@ submitBtn.addEventListener("click", async () => {
     });
     if (!response.ok) throw new Error("save failed");
     lastSubmittedScore = score;
+    highScore = Math.max(highScore, score);
+    updateHud();
     openScoresModal();
   } catch {
     submitBtn.disabled = false;
@@ -698,6 +770,7 @@ submitBtn.addEventListener("click", async () => {
 });
 
 resetGame();
+void refreshHighScore();
 requestAnimationFrame((ts) => {
   lastFrame = ts;
   requestAnimationFrame(animate);

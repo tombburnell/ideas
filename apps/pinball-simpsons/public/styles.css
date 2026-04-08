@@ -20,6 +20,7 @@ body {
   min-height: 100dvh;
   font-family: Arial, Helvetica, sans-serif;
   color: var(--ink);
+  overflow: hidden;
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.75), transparent 32%),
     linear-gradient(180deg, #8bd7ff 0%, #6bc1ff 50%, #4c90ff 100%);
@@ -32,36 +33,10 @@ body.modal-open {
 .shell {
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 1rem;
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding: max(0.55rem, env(safe-area-inset-top)) 0.55rem max(0.7rem, env(safe-area-inset-bottom));
 }
 
-.hero {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.hero-logo {
-  width: min(88vw, 360px);
-  height: auto;
-  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.2));
-}
-
-.hero-tagline {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #fefefe;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
-}
-
-.scores-open-btn,
+.secondary-btn,
 #overlayActionBtn,
 .name-row button,
 .control-btn,
@@ -75,46 +50,47 @@ body.modal-open {
   -webkit-tap-highlight-color: transparent;
 }
 
-.scores-open-btn {
-  background: #fff;
-  color: var(--ink);
-  padding: 0.7rem 1.15rem;
-  box-shadow: 0 8px 16px var(--shadow);
-}
-
 .layout {
   display: flex;
   justify-content: center;
+  height: 100%;
+  min-height: calc(100vh - max(0.55rem, env(safe-area-inset-top)) - max(0.7rem, env(safe-area-inset-bottom)));
+  min-height: calc(100dvh - max(0.55rem, env(safe-area-inset-top)) - max(0.7rem, env(safe-area-inset-bottom)));
 }
 
 .table-panel {
-  width: min(100%, 980px);
+  width: min(100%, 680px);
+  height: 100%;
   background: rgba(255, 255, 255, 0.28);
   border: 3px solid rgba(255, 255, 255, 0.55);
   border-radius: 28px;
   backdrop-filter: blur(8px);
   box-shadow: 0 22px 48px rgba(19, 31, 77, 0.2);
-  padding: clamp(0.9rem, 3vw, 1.35rem);
+  padding: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 0;
 }
 
 .hud {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 0.9rem;
+  gap: 0.45rem;
 }
 
 .hud > div {
   background: var(--panel);
-  border: 3px solid rgba(0, 0, 0, 0.12);
-  border-radius: 18px;
-  padding: 0.7rem 0.8rem;
-  box-shadow: 0 8px 18px rgba(35, 37, 58, 0.12);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem 0.4rem;
+  box-shadow: 0 6px 14px rgba(35, 37, 58, 0.1);
+  text-align: center;
 }
 
 .hud-label {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -123,21 +99,24 @@ body.modal-open {
 
 .hud strong {
   display: block;
-  font-size: clamp(1.1rem, 4.2vw, 1.75rem);
-  margin-top: 0.2rem;
+  font-size: clamp(0.95rem, 3.4vw, 1.25rem);
+  margin-top: 0.08rem;
 }
 
 .playfield-frame {
   position: relative;
   border-radius: 28px;
-  padding: clamp(0.4rem, 1.6vw, 0.75rem);
+  padding: 0.35rem;
   background: linear-gradient(180deg, #fff5a2, #ffd24f 50%, #ffb132 100%);
   box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.1), 0 18px 30px rgba(20, 30, 68, 0.25);
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
 
 .game-wrap {
   width: 100%;
-  aspect-ratio: 0.62;
+  height: 100%;
   border-radius: 24px;
   overflow: hidden;
   background: linear-gradient(180deg, #95ddff, #72c4ff 35%, #ffe066 35%, #f9c425 100%);
@@ -187,7 +166,9 @@ body.modal-open {
 }
 
 .controls-panel {
-  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
 .desktop-help {
@@ -196,8 +177,9 @@ body.modal-open {
   align-items: center;
   gap: 0.4rem;
   flex-wrap: wrap;
-  margin-bottom: 0.7rem;
+  min-height: 1.75rem;
   font-weight: 700;
+  font-size: 0.92rem;
 }
 
 .key {
@@ -214,11 +196,11 @@ body.modal-open {
 .mobile-controls {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .control-btn {
-  min-height: 3.9rem;
+  min-height: 3.5rem;
   color: #fff;
   box-shadow: 0 12px 18px rgba(20, 30, 68, 0.2);
 }
@@ -232,33 +214,17 @@ body.modal-open {
   background: var(--pink);
 }
 
-.meta-panel {
+.action-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.9rem;
-  margin-top: 1rem;
+  gap: 0.5rem;
 }
 
-.meta-copy {
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 20px;
-  padding: 0.9rem 1rem;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
-}
-
-.meta-copy h2 {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-}
-
-.meta-copy p,
-.meta-copy li {
-  line-height: 1.45;
-}
-
-.meta-copy ol {
-  margin: 0;
-  padding-left: 1.2rem;
+.secondary-btn {
+  min-height: 2.9rem;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--ink);
+  box-shadow: 0 10px 18px rgba(20, 30, 68, 0.16);
 }
 
 .name-row {
@@ -266,10 +232,9 @@ body.modal-open {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
-  margin-top: 1rem;
   background: rgba(255, 255, 255, 0.72);
   border-radius: 20px;
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.9rem;
 }
 
 .name-row input {
@@ -340,6 +305,21 @@ body.modal-open {
   margin: 0;
 }
 
+.help-copy ol {
+  margin: 0.8rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.help-copy li {
+  line-height: 1.5;
+  margin: 0.45rem 0;
+}
+
+.help-audio {
+  margin: 0.85rem 0 0;
+  font-weight: 700;
+}
+
 .modal-close {
   width: 2.5rem;
   height: 2.5rem;
@@ -363,25 +343,21 @@ body.modal-open {
 
 @media (max-width: 720px) {
   .shell {
-    padding: 0.7rem;
-  }
-
-  .hud,
-  .meta-panel {
-    grid-template-columns: 1fr;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
   }
 
   .table-panel {
-    padding: 0.75rem;
-    border-radius: 20px;
+    padding: 0.45rem;
+    border-radius: 22px;
   }
 
   .desktop-help {
-    font-size: 0.92rem;
+    display: none;
   }
 
   .control-btn {
-    min-height: 4.4rem;
+    min-height: 4rem;
     font-size: 1rem;
   }
 }
