@@ -16,10 +16,10 @@ const BASE_BALLS = 3;
 const EXTRA_BALL_THRESHOLDS = [1500, 3500];
 const FIXED_STEP = 1 / 60;
 const PLAYFIELD_LEFT = 82;
-const PLAYFIELD_RIGHT = 538;
-const LAUNCH_LANE_LEFT = 484;
-const LAUNCH_LANE_RIGHT = 560;
-const LAUNCH_LANE_CENTER = 522;
+const PLAYFIELD_RIGHT = 520;
+const LAUNCH_LANE_LEFT = PLAYFIELD_RIGHT;
+const LAUNCH_LANE_RIGHT = 590;
+const LAUNCH_LANE_CENTER = 555;
 const LAUNCH_REST_Y = 900;
 const LAUNCH_EXIT_Y = 188;
 
@@ -212,16 +212,16 @@ addStaticSegment([PLAYFIELD_LEFT, 704], [142, 828], 0.2);
 addStaticSegment([142, 828], [194, 902], 0.18);
 
 addStaticSegment([146, 110], [PLAYFIELD_RIGHT, 110], 0.45);
+addStaticSegment([PLAYFIELD_RIGHT, 110], [PLAYFIELD_RIGHT, 684], 0.22);
+addStaticSegment([PLAYFIELD_RIGHT, 684], [450, 818], 0.2);
+addStaticSegment([450, 818], [406, 902], 0.18);
 
 addStaticSegment([LAUNCH_LANE_RIGHT, 96], [LAUNCH_LANE_RIGHT, 930], 0.2);
-addStaticSegment([PLAYFIELD_RIGHT, 110], [PLAYFIELD_RIGHT, 684], 0.22);
-addStaticSegment([PLAYFIELD_RIGHT, 684], [462, 818], 0.2);
-addStaticSegment([462, 818], [418, 902], 0.18);
 
 addStaticSegment([96, 724], [196, 784], 0.36, 0.06);
-addStaticSegment([524, 724], [424, 784], 0.36, 0.06);
+addStaticSegment([512, 724], [412, 784], 0.36, 0.06);
 addStaticSegment([126, 932], [210, 892], 0.15);
-addStaticSegment([494, 932], [410, 892], 0.15);
+addStaticSegment([482, 932], [398, 892], 0.15);
 
 addSensorRect(310, 938, 102, 20, { type: "drain" });
 laneHandles.push(addSensorRect(150, 212, 42, 16, { type: "lane", points: 150 }));
