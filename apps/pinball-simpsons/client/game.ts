@@ -21,7 +21,12 @@ const LAUNCH_LANE_LEFT = PLAYFIELD_RIGHT;
 const LAUNCH_LANE_RIGHT = 590;
 const LAUNCH_LANE_CENTER = 555;
 const LAUNCH_REST_Y = 900;
-const LAUNCH_EXIT_Y = 188;
+const LAUNCH_EXIT_Y = 214;
+const TOP_ARC_Y = 132;
+const TOP_LEFT_ARC_X = 160;
+const TOP_RIGHT_ARC_X = 468;
+const LANE_OUTER_WALL_X = 578;
+const LANE_JOIN_Y = 128;
 
 const scoreEl = document.getElementById("score") as HTMLElement;
 const ballsEl = document.getElementById("balls") as HTMLElement;
@@ -206,17 +211,20 @@ const bumpers = [
   addBumper(420, 335, 34, 125),
 ];
 
-addStaticSegment([140, 108], [PLAYFIELD_LEFT, 198], 0.45);
+addStaticSegment([140, 108], [TOP_LEFT_ARC_X, TOP_ARC_Y], 0.45);
+addStaticSegment([TOP_LEFT_ARC_X, TOP_ARC_Y], [PLAYFIELD_LEFT, 198], 0.45);
 addStaticSegment([PLAYFIELD_LEFT, 198], [PLAYFIELD_LEFT, 704], 0.22);
 addStaticSegment([PLAYFIELD_LEFT, 704], [142, 828], 0.2);
 addStaticSegment([142, 828], [194, 902], 0.18);
 
-addStaticSegment([146, 110], [PLAYFIELD_RIGHT, 110], 0.45);
-addStaticSegment([PLAYFIELD_RIGHT, 110], [PLAYFIELD_RIGHT, 684], 0.22);
+addStaticSegment([146, 110], [TOP_LEFT_ARC_X, TOP_ARC_Y], 0.45);
+addStaticSegment([TOP_LEFT_ARC_X, TOP_ARC_Y], [TOP_RIGHT_ARC_X, TOP_ARC_Y], 0.45);
+addStaticSegment([TOP_RIGHT_ARC_X, TOP_ARC_Y], [LANE_OUTER_WALL_X, LANE_JOIN_Y], 0.45);
+addStaticSegment([PLAYFIELD_RIGHT, LAUNCH_EXIT_Y], [PLAYFIELD_RIGHT, 684], 0.22);
 addStaticSegment([PLAYFIELD_RIGHT, 684], [450, 818], 0.2);
 addStaticSegment([450, 818], [406, 902], 0.18);
 
-addStaticSegment([LAUNCH_LANE_RIGHT, 96], [LAUNCH_LANE_RIGHT, 930], 0.2);
+addStaticSegment([LANE_OUTER_WALL_X, LANE_JOIN_Y], [LANE_OUTER_WALL_X, 930], 0.2);
 
 addStaticSegment([96, 724], [196, 784], 0.36, 0.06);
 addStaticSegment([512, 724], [412, 784], 0.36, 0.06);

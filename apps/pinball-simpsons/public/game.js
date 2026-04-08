@@ -47518,7 +47518,12 @@ var LAUNCH_LANE_LEFT = PLAYFIELD_RIGHT;
 var LAUNCH_LANE_RIGHT = 590;
 var LAUNCH_LANE_CENTER = 555;
 var LAUNCH_REST_Y = 900;
-var LAUNCH_EXIT_Y = 188;
+var LAUNCH_EXIT_Y = 214;
+var TOP_ARC_Y = 132;
+var TOP_LEFT_ARC_X = 160;
+var TOP_RIGHT_ARC_X = 468;
+var LANE_OUTER_WALL_X = 578;
+var LANE_JOIN_Y = 128;
 var scoreEl = document.getElementById("score");
 var ballsEl = document.getElementById("balls");
 var highScoreEl = document.getElementById("highScore");
@@ -47666,15 +47671,18 @@ var bumpers = [
   addBumper(310, 250, 36, 150),
   addBumper(420, 335, 34, 125)
 ];
-addStaticSegment([140, 108], [PLAYFIELD_LEFT, 198], 0.45);
+addStaticSegment([140, 108], [TOP_LEFT_ARC_X, TOP_ARC_Y], 0.45);
+addStaticSegment([TOP_LEFT_ARC_X, TOP_ARC_Y], [PLAYFIELD_LEFT, 198], 0.45);
 addStaticSegment([PLAYFIELD_LEFT, 198], [PLAYFIELD_LEFT, 704], 0.22);
 addStaticSegment([PLAYFIELD_LEFT, 704], [142, 828], 0.2);
 addStaticSegment([142, 828], [194, 902], 0.18);
-addStaticSegment([146, 110], [PLAYFIELD_RIGHT, 110], 0.45);
-addStaticSegment([PLAYFIELD_RIGHT, 110], [PLAYFIELD_RIGHT, 684], 0.22);
+addStaticSegment([146, 110], [TOP_LEFT_ARC_X, TOP_ARC_Y], 0.45);
+addStaticSegment([TOP_LEFT_ARC_X, TOP_ARC_Y], [TOP_RIGHT_ARC_X, TOP_ARC_Y], 0.45);
+addStaticSegment([TOP_RIGHT_ARC_X, TOP_ARC_Y], [LANE_OUTER_WALL_X, LANE_JOIN_Y], 0.45);
+addStaticSegment([PLAYFIELD_RIGHT, LAUNCH_EXIT_Y], [PLAYFIELD_RIGHT, 684], 0.22);
 addStaticSegment([PLAYFIELD_RIGHT, 684], [450, 818], 0.2);
 addStaticSegment([450, 818], [406, 902], 0.18);
-addStaticSegment([LAUNCH_LANE_RIGHT, 96], [LAUNCH_LANE_RIGHT, 930], 0.2);
+addStaticSegment([LANE_OUTER_WALL_X, LANE_JOIN_Y], [LANE_OUTER_WALL_X, 930], 0.2);
 addStaticSegment([96, 724], [196, 784], 0.36, 0.06);
 addStaticSegment([512, 724], [412, 784], 0.36, 0.06);
 addStaticSegment([126, 932], [210, 892], 0.15);
