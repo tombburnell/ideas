@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Simpsons Pinball</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <img class="hero-logo" src="/assets/simpsons-logo.svg" alt="The Simpsons" />
+        <p class="hero-tagline">Springfield Pinball</p>
+        <button type="button" class="scores-open-btn" id="openScoresBtn">High scores</button>
+      </header>
+
+      <main class="layout">
+        <section class="table-panel">
+          <div class="hud">
+            <div>
+              <span class="hud-label">Score</span>
+              <strong id="score">0</strong>
+            </div>
+            <div>
+              <span class="hud-label">Balls</span>
+              <strong id="balls">3</strong>
+            </div>
+            <div>
+              <span class="hud-label">Status</span>
+              <strong id="status">READY</strong>
+            </div>
+          </div>
+
+          <div class="playfield-frame">
+            <div id="gameWrap" class="game-wrap" aria-label="Simpsons pinball table"></div>
+            <div class="board-overlay" id="boardOverlay">
+              <div class="overlay-card">
+                <img class="overlay-signature" src="/assets/homer-signature.svg" alt="Homer Simpson signature" />
+                <p id="overlayMessage">Tap launch to send the ball into Springfield.</p>
+                <button type="button" id="overlayActionBtn">Start game</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="controls-panel">
+            <div class="desktop-help">
+              <span class="key">A</span>
+              <span class="key">D</span>
+              flippers
+              <span class="key">Space</span>
+              launch
+            </div>
+            <div class="mobile-controls" aria-label="Pinball controls">
+              <button type="button" class="control-btn left" id="leftBtn">Left</button>
+              <button type="button" class="control-btn launch" id="launchBtn">Launch</button>
+              <button type="button" class="control-btn right" id="rightBtn">Right</button>
+            </div>
+          </div>
+
+          <div class="meta-panel">
+            <div class="meta-copy">
+              <h2>Table rules</h2>
+              <ol>
+                <li>Hit bumpers and upper lanes to build score.</li>
+                <li>Light extra balls at 1500 and 3500 points.</li>
+                <li>Drain all balls and submit your Springfield initials.</li>
+              </ol>
+            </div>
+            <div class="meta-copy">
+              <h2>Audio</h2>
+              <p>Audio is on by default and unlocks after your first tap or key press.</p>
+            </div>
+          </div>
+
+          <div class="name-row hidden" id="nameRow">
+            <label for="playerName">Name</label>
+            <input id="playerName" type="text" maxlength="32" placeholder="Springfield hero" autocomplete="off" />
+            <button type="button" id="submitScore" disabled>Submit score</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal" id="scoresModal" hidden>
+      <button type="button" class="modal-backdrop" id="scoresModalBackdrop" aria-label="Close high scores"></button>
+      <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="scoresModalTitle">
+        <div class="modal-header">
+          <h2 id="scoresModalTitle">High scores</h2>
+          <button type="button" class="modal-close" id="scoresModalClose" aria-label="Close">×</button>
+        </div>
+        <ol id="leaderboard" class="leaderboard"></ol>
+        <p id="scoresError" class="error hidden"></p>
+      </section>
+    </div>
+
+    <script type="module" src="/game.js"></script>
+  </body>
+</html>
