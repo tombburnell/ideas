@@ -20,7 +20,8 @@ body {
   min-height: 100dvh;
   font-family: Arial, Helvetica, sans-serif;
   color: var(--ink);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.75), transparent 32%),
     linear-gradient(180deg, #8bd7ff 0%, #6bc1ff 50%, #4c90ff 100%);
@@ -33,7 +34,10 @@ body.modal-open {
 .shell {
   min-height: 100vh;
   min-height: 100dvh;
-  padding: max(0.55rem, env(safe-area-inset-top)) 0.55rem max(0.7rem, env(safe-area-inset-bottom));
+  padding:
+    max(0.55rem, env(safe-area-inset-top))
+    0.55rem
+    max(5.5rem, calc(env(safe-area-inset-bottom) + 4.5rem));
 }
 
 .secondary-btn,
@@ -53,14 +57,12 @@ body.modal-open {
 .layout {
   display: flex;
   justify-content: center;
-  height: 100%;
-  min-height: calc(100vh - max(0.55rem, env(safe-area-inset-top)) - max(0.7rem, env(safe-area-inset-bottom)));
-  min-height: calc(100dvh - max(0.55rem, env(safe-area-inset-top)) - max(0.7rem, env(safe-area-inset-bottom)));
+  min-height: calc(100vh - max(0.55rem, env(safe-area-inset-top)) - max(5.5rem, calc(env(safe-area-inset-bottom) + 4.5rem)));
+  min-height: calc(100dvh - max(0.55rem, env(safe-area-inset-top)) - max(5.5rem, calc(env(safe-area-inset-bottom) + 4.5rem)));
 }
 
 .table-panel {
   width: min(100%, 680px);
-  height: 100%;
   background: rgba(255, 255, 255, 0.28);
   border: 3px solid rgba(255, 255, 255, 0.55);
   border-radius: 28px;
@@ -70,7 +72,8 @@ body.modal-open {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  min-height: 0;
+  min-height: min(980px, calc(100vh - max(0.55rem, env(safe-area-inset-top)) - max(5.5rem, calc(env(safe-area-inset-bottom) + 4.5rem))));
+  min-height: min(980px, calc(100dvh - max(0.55rem, env(safe-area-inset-top)) - max(5.5rem, calc(env(safe-area-inset-bottom) + 4.5rem))));
 }
 
 .hud {
@@ -169,6 +172,7 @@ body.modal-open {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
 }
 
 .desktop-help {
@@ -345,15 +349,27 @@ body.modal-open {
   .shell {
     padding-left: 0.35rem;
     padding-right: 0.35rem;
+    padding-bottom: max(7.5rem, calc(env(safe-area-inset-bottom) + 6rem));
   }
 
   .table-panel {
     padding: 0.45rem;
     border-radius: 22px;
+    min-height: auto;
   }
 
   .desktop-help {
     display: none;
+  }
+
+  .playfield-frame {
+    flex: 0 0 auto;
+  }
+
+  .game-wrap {
+    aspect-ratio: 0.62;
+    height: auto;
+    max-height: min(68vh, 72dvh);
   }
 
   .control-btn {

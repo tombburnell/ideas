@@ -47517,6 +47517,8 @@ var PLAYFIELD_RIGHT = 538;
 var LAUNCH_LANE_LEFT = 484;
 var LAUNCH_LANE_RIGHT = 560;
 var LAUNCH_LANE_CENTER = 522;
+var LAUNCH_REST_Y = 900;
+var LAUNCH_GATE_Y = 170;
 var scoreEl = document.getElementById("score");
 var ballsEl = document.getElementById("balls");
 var highScoreEl = document.getElementById("highScore");
@@ -47674,11 +47676,10 @@ addStaticSegment([140, 108], [PLAYFIELD_LEFT, 198], 0.45);
 addStaticSegment([PLAYFIELD_LEFT, 198], [PLAYFIELD_LEFT, 704], 0.22);
 addStaticSegment([PLAYFIELD_LEFT, 704], [142, 828], 0.2);
 addStaticSegment([142, 828], [194, 902], 0.18);
-addStaticSegment([146, 110], [442, 110], 0.45);
-addStaticSegment([442, 110], [LAUNCH_LANE_LEFT, 150], 0.35);
-addStaticSegment([LAUNCH_LANE_LEFT, 150], [LAUNCH_LANE_LEFT, 894], 0.15);
+addStaticSegment([146, 110], [452, 110], 0.45);
+addStaticSegment([LAUNCH_LANE_LEFT, 110], [LAUNCH_LANE_LEFT, 922], 0.15);
 addStaticSegment([LAUNCH_LANE_RIGHT, 96], [LAUNCH_LANE_RIGHT, 930], 0.2);
-addStaticSegment([PLAYFIELD_RIGHT, 110], [LAUNCH_LANE_RIGHT, 196], 0.45);
+addStaticSegment([PLAYFIELD_RIGHT, 110], [LAUNCH_LANE_RIGHT, 150], 0.45);
 addStaticSegment([PLAYFIELD_RIGHT, 196], [PLAYFIELD_RIGHT, 704], 0.22);
 addStaticSegment([PLAYFIELD_RIGHT, 704], [478, 828], 0.2);
 addStaticSegment([478, 828], [426, 902], 0.18);
@@ -47693,7 +47694,7 @@ addSensorBall(176, 780, 34, { type: "slingshot", points: 25 });
 addSensorBall(444, 780, 34, { type: "slingshot", points: 25 });
 function createBall(inLauncher) {
   const body = world.createRigidBody(
-    cg.RigidBodyDesc.dynamic().setTranslation(inLauncher ? LAUNCH_LANE_CENTER : 458, inLauncher ? 855 : 205).setLinearDamping(0.12).setAngularDamping(0.2).setCcdEnabled(true)
+    cg.RigidBodyDesc.dynamic().setTranslation(inLauncher ? LAUNCH_LANE_CENTER : 458, inLauncher ? LAUNCH_REST_Y : 205).setLinearDamping(0.12).setAngularDamping(0.2).setCcdEnabled(true)
   );
   const collider = world.createCollider(
     cg.ColliderDesc.ball(BALL_RADIUS).setDensity(0.8).setRestitution(0.72).setFriction(0.02).setActiveEvents(cg.ActiveEvents.COLLISION_EVENTS),
@@ -47771,8 +47772,8 @@ function launchBall() {
     running = true;
   }
   if (!ballInLauncher) return;
-  ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: 855 }, true);
-  ballBody.setLinvel({ x: 0, y: -2300 }, true);
+  ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: LAUNCH_REST_Y }, true);
+  ballBody.setLinvel({ x: 0, y: -2850 }, true);
   ballInLauncher = false;
   updateOverlay();
   playSound("launch");
@@ -47841,9 +47842,14 @@ function stepPhysics(deltaMs) {
       if (tag2?.type === "ball" && tag1) handleCollision(tag1, h1);
     });
     const pos = ballBody.translation();
+    if (ballInLauncher) {
+      ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: LAUNCH_REST_Y }, true);
+      ballBody.setLinvel({ x: 0, y: 0 }, true);
+      ballBody.setAngvel(0, true);
+    }
     if (!ballInLauncher && pos.x > LAUNCH_LANE_LEFT + 4 && pos.x < LAUNCH_LANE_RIGHT - 4) {
-      if (pos.y < 205) {
-        ballBody.applyImpulse({ x: -72, y: -18 }, true);
+      if (pos.y < LAUNCH_GATE_Y) {
+        ballBody.applyImpulse({ x: -110, y: -22 }, true);
       }
       if (pos.x < LAUNCH_LANE_LEFT + BALL_RADIUS + 3) {
         ballBody.setTranslation({ x: LAUNCH_LANE_LEFT + BALL_RADIUS + 4, y: pos.y }, true);
@@ -47964,9 +47970,10 @@ function drawTable() {
   tableLayer.addChild(stars);
   const rails = new Graphics();
   rails.moveTo(140, 108).lineTo(PLAYFIELD_LEFT, 198).lineTo(PLAYFIELD_LEFT, 704).lineTo(142, 828).lineTo(194, 902);
-  rails.moveTo(146, 110).lineTo(442, 110).lineTo(LAUNCH_LANE_LEFT, 150).lineTo(LAUNCH_LANE_LEFT, 894);
+  rails.moveTo(146, 110).lineTo(452, 110);
+  rails.moveTo(LAUNCH_LANE_LEFT, 110).lineTo(LAUNCH_LANE_LEFT, 922);
   rails.moveTo(LAUNCH_LANE_RIGHT, 96).lineTo(LAUNCH_LANE_RIGHT, 930);
-  rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 196);
+  rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 150);
   rails.moveTo(PLAYFIELD_RIGHT, 196).lineTo(PLAYFIELD_RIGHT, 704).lineTo(478, 828).lineTo(426, 902);
   rails.moveTo(90, 720).lineTo(216, 796).lineTo(142, 828);
   rails.moveTo(530, 720).lineTo(404, 796).lineTo(478, 828);
