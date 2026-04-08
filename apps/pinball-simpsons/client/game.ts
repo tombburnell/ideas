@@ -21,7 +21,10 @@ const LAUNCH_LANE_LEFT = 484;
 const LAUNCH_LANE_RIGHT = 560;
 const LAUNCH_LANE_CENTER = 522;
 const LAUNCH_REST_Y = 900;
-const LAUNCH_GATE_Y = 170;
+const LAUNCH_CURVE_START_Y = 186;
+const LAUNCH_CURVE_PEAK_Y = 112;
+const LAUNCH_FEED_TARGET_X = 352;
+const LAUNCH_FEED_TARGET_Y = 176;
 
 const scoreEl = document.getElementById("score") as HTMLElement;
 const ballsEl = document.getElementById("balls") as HTMLElement;
@@ -119,6 +122,7 @@ let drainPending = false;
 let leftLaneLit = false;
 let rightLaneLit = false;
 let ballInProtectedLaunchLane = false;
+let launchFeedProgress = 0;
 let ballBody = createBall(true);
 const laneHandles: number[] = [];
 
@@ -250,6 +254,7 @@ function replaceBall(inLauncher: boolean) {
   ballBody = createBall(inLauncher);
   ballInLauncher = inLauncher;
   ballInProtectedLaunchLane = false;
+  launchFeedProgress = 0;
   drainPending = false;
 }
 
@@ -323,6 +328,7 @@ function launchBall() {
   ballBody.setLinvel({ x: 0, y: -3200 }, true);
   ballInLauncher = false;
   ballInProtectedLaunchLane = true;
+  launchFeedProgress = 0;
   updateOverlay();
   playSound("launch");
 }
@@ -400,17 +406,36 @@ function stepPhysics(deltaMs: number) {
     }
     if (ballInProtectedLaunchLane) {
       const currentVel = ballBody.linvel();
-      ballBody.setTranslation({ x: LAUNCH_LANE_CENTER, y: pos.y }, true);
-      ballBody.setLinvel({ x: 0, y: Math.min(currentVel.y, -3000) }, true);
+      let targetX = LAUNCH_LANE_CENTER;
+      let targetY = pos.y;
+      let targetVel = { x: 0, y: Math.min(currentVel.y, -3000) };
+
+      if (pos.y > LAUNCH_CURVE_START_Y) {
+        targetY = pos.y;
+      } else {
+        launchFeedProgress = Math.min(
+          1,
+          (LAUNCH_CURVE_START_Y - pos.y) / (LAUNCH_CURVE_START_Y - LAUNCH_CURVE_PEAK_Y)
+        );
+        const eased = 1 - (1 - launchFeedProgress) * (1 - launchFeedProgress);
+        targetX = LAUNCH_LANE_CENTER + (LAUNCH_FEED_TARGET_X - LAUNCH_LANE_CENTER) * eased;
+        targetY = LAUNCH_CURVE_START_Y + (LAUNCH_FEED_TARGET_Y - LAUNCH_CURVE_START_Y) * eased;
+        targetVel = {
+          x: -1200,
+          y: -900 + 1300 * eased,
+        };
+      }
+
+      ballBody.setTranslation({ x: targetX, y: targetY }, true);
+      ballBody.setLinvel(targetVel, true);
       ballBody.setAngvel(0, true);
-      if (pos.y <= LAUNCH_GATE_Y) {
+      if (launchFeedProgress >= 1) {
         ballInProtectedLaunchLane = false;
-        ballBody.setLinvel({ x: -620, y: -2480 }, true);
+        launchFeedProgress = 0;
+        ballBody.setTranslation({ x: LAUNCH_FEED_TARGET_X, y: LAUNCH_FEED_TARGET_Y }, true);
+        ballBody.setLinvel({ x: -420, y: 180 }, true);
       }
     } else if (!ballInLauncher && pos.x > LAUNCH_LANE_LEFT + 4 && pos.x < LAUNCH_LANE_RIGHT - 4) {
-      if (pos.y < LAUNCH_GATE_Y) {
-        ballBody.applyImpulse({ x: -110, y: -22 }, true);
-      }
       if (pos.x < LAUNCH_LANE_LEFT + BALL_RADIUS + 3) {
         ballBody.setTranslation({ x: LAUNCH_LANE_LEFT + BALL_RADIUS + 4, y: pos.y }, true);
       } else if (pos.x > LAUNCH_LANE_RIGHT - BALL_RADIUS - 3) {
@@ -466,6 +491,12 @@ function drawTable() {
     .fill({ color: 0xf6d558, alpha: 0.35 })
     .stroke({ color: 0x20274a, width: 6, alpha: 0.42 });
   bg.roundRect(LAUNCH_LANE_LEFT, 96, LAUNCH_LANE_RIGHT - LAUNCH_LANE_LEFT, 832, 22)
+    .fill({ color: 0x9ee7ff, alpha: 0.62 })
+    .stroke({ color: 0xffffff, width: 4, alpha: 0.85 });
+  bg.moveTo(LAUNCH_LANE_LEFT, LAUNCH_CURVE_START_Y)
+    .quadraticCurveTo(LAUNCH_LANE_LEFT + 8, 118, LAUNCH_FEED_TARGET_X, LAUNCH_FEED_TARGET_Y)
+    .lineTo(LAUNCH_FEED_TARGET_X + 26, LAUNCH_FEED_TARGET_Y + 18)
+    .quadraticCurveTo(LAUNCH_LANE_RIGHT - 12, 150, LAUNCH_LANE_RIGHT, LAUNCH_CURVE_START_Y)
     .fill({ color: 0x9ee7ff, alpha: 0.62 })
     .stroke({ color: 0xffffff, width: 4, alpha: 0.85 });
   tableLayer.addChild(bg);
@@ -550,6 +581,8 @@ function drawTable() {
   rails.moveTo(146, 110).lineTo(452, 110);
   rails.moveTo(LAUNCH_LANE_LEFT, 110).lineTo(LAUNCH_LANE_LEFT, 922);
   rails.moveTo(LAUNCH_LANE_RIGHT, 96).lineTo(LAUNCH_LANE_RIGHT, 930);
+  rails.moveTo(LAUNCH_LANE_LEFT, LAUNCH_CURVE_START_Y).quadraticCurveTo(LAUNCH_LANE_LEFT + 8, 118, LAUNCH_FEED_TARGET_X, LAUNCH_FEED_TARGET_Y);
+  rails.moveTo(LAUNCH_FEED_TARGET_X + 26, LAUNCH_FEED_TARGET_Y + 18).quadraticCurveTo(LAUNCH_LANE_RIGHT - 12, 150, LAUNCH_LANE_RIGHT, LAUNCH_CURVE_START_Y);
   rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 150);
   rails.moveTo(PLAYFIELD_RIGHT, 196).lineTo(PLAYFIELD_RIGHT, 684).lineTo(462, 818).lineTo(418, 902);
   rails.moveTo(90, 720).lineTo(216, 796).lineTo(142, 828);
