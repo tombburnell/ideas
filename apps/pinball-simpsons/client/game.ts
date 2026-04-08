@@ -79,12 +79,14 @@ for (const list of Object.values(sounds)) {
 }
 sounds.drain[0].volume = 0.75;
 
-const leftFlipperPivot = { x: 222, y: 860 };
-const rightFlipperPivot = { x: 398, y: 860 };
-const leftFlipperRest = 0.42;
-const leftFlipperActive = -0.32;
-const rightFlipperRest = -0.42;
-const rightFlipperActive = 0.32;
+const leftFlipperPivot = { x: 202, y: 860 };
+const rightFlipperPivot = { x: 418, y: 860 };
+const FLIPPER_HALF_LENGTH = 56;
+const FLIPPER_HALF_THICKNESS = 12;
+const leftFlipperRest = 0.68;
+const leftFlipperActive = -0.18;
+const rightFlipperRest = -0.68;
+const rightFlipperActive = 0.18;
 const leftFlipperBody = world.createRigidBody(
   RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(leftFlipperPivot.x, leftFlipperPivot.y)
 );
@@ -94,11 +96,17 @@ const rightFlipperBody = world.createRigidBody(
 leftFlipperBody.setRotation(leftFlipperRest, true);
 rightFlipperBody.setRotation(rightFlipperRest, true);
 world.createCollider(
-  RAPIER.ColliderDesc.capsule(12, 58).setMass(8).setRestitution(0.15).setFriction(0.05),
+  RAPIER.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS)
+    .setTranslation(FLIPPER_HALF_LENGTH, 0)
+    .setRestitution(0.15)
+    .setFriction(0.05),
   leftFlipperBody
 );
 world.createCollider(
-  RAPIER.ColliderDesc.capsule(12, 58).setMass(8).setRestitution(0.15).setFriction(0.05),
+  RAPIER.ColliderDesc.cuboid(FLIPPER_HALF_LENGTH, FLIPPER_HALF_THICKNESS)
+    .setTranslation(-FLIPPER_HALF_LENGTH, 0)
+    .setRestitution(0.15)
+    .setFriction(0.05),
   rightFlipperBody
 );
 
@@ -215,17 +223,14 @@ addStaticSegment([PLAYFIELD_RIGHT, 214], [PLAYFIELD_RIGHT, 684], 0.22);
 addStaticSegment([PLAYFIELD_RIGHT, 684], [462, 818], 0.2);
 addStaticSegment([462, 818], [418, 902], 0.18);
 
-addStaticSegment([100, 724], [214, 792], 0.36, 0.06);
-addStaticSegment([500, 724], [386, 792], 0.36, 0.06);
-addStaticSegment([138, 932], [224, 884], 0.15);
-addStaticSegment([466, 932], [396, 884], 0.15);
+addStaticSegment([96, 724], [196, 784], 0.36, 0.06);
+addStaticSegment([524, 724], [424, 784], 0.36, 0.06);
+addStaticSegment([126, 932], [210, 892], 0.15);
+addStaticSegment([494, 932], [410, 892], 0.15);
 
 addSensorRect(310, 938, 102, 20, { type: "drain" });
 laneHandles.push(addSensorRect(150, 212, 42, 16, { type: "lane", points: 150 }));
 laneHandles.push(addSensorRect(470, 212, 42, 16, { type: "lane", points: 150 }));
-addSensorBall(174, 780, 34, { type: "slingshot", points: 25 });
-addSensorBall(432, 780, 34, { type: "slingshot", points: 25 });
-
 function createBall(inLauncher: boolean) {
   const body = world.createRigidBody(
     RAPIER.RigidBodyDesc.dynamic()
@@ -416,12 +421,6 @@ function stepPhysics(deltaMs: number) {
     if (!ballInLauncher && pos.y > VIRTUAL_HEIGHT + 100) {
       drainBall();
     }
-    if (leftPressed && pos.y > 770 && pos.x < 300) {
-      ballBody.applyImpulse({ x: 22, y: -34 }, true);
-    }
-    if (rightPressed && pos.y > 770 && pos.x > 320) {
-      ballBody.applyImpulse({ x: -22, y: -34 }, true);
-    }
   }
 }
 
@@ -468,10 +467,10 @@ function drawTable() {
 
   const logo = PIXI.Sprite.from("/assets/simpsons-logo.svg");
   logo.anchor.set(0.5);
-  logo.position.set(300, 710);
-  logo.width = 350;
-  logo.height = 140;
-  logo.alpha = 0.16;
+  logo.position.set(300, 680);
+  logo.width = 380;
+  logo.height = 152;
+  logo.alpha = 0.26;
   tableLayer.addChild(logo);
 
   const lanePanel = new PIXI.Graphics();
@@ -548,10 +547,10 @@ function drawTable() {
   rails.moveTo(LAUNCH_LANE_RIGHT, 96).lineTo(LAUNCH_LANE_RIGHT, 930);
   rails.moveTo(PLAYFIELD_RIGHT, 110).lineTo(LAUNCH_LANE_RIGHT, 150);
   rails.moveTo(470, 110).lineTo(500, 124).lineTo(524, 154).lineTo(PLAYFIELD_RIGHT, 214).lineTo(PLAYFIELD_RIGHT, 684).lineTo(462, 818).lineTo(418, 902);
-  rails.moveTo(90, 720).lineTo(216, 796).lineTo(142, 828);
-  rails.moveTo(510, 720).lineTo(388, 796).lineTo(462, 818);
-  rails.moveTo(150, 932).lineTo(242, 870);
-  rails.moveTo(454, 932).lineTo(370, 870);
+  rails.moveTo(96, 724).lineTo(196, 784).lineTo(142, 828);
+  rails.moveTo(524, 724).lineTo(424, 784).lineTo(462, 818);
+  rails.moveTo(126, 932).lineTo(210, 892);
+  rails.moveTo(494, 932).lineTo(410, 892);
   rails.stroke({ color: 0xffffff, width: 8, alpha: 0.85, cap: "round", join: "round" });
   tableLayer.addChild(rails);
 
@@ -564,8 +563,8 @@ function drawTable() {
   }
 
   const slings = new PIXI.Graphics();
-  slings.poly([90, 720, 216, 796, 142, 828]).fill({ color: 0xff6db6, alpha: 0.82 }).stroke({ color: 0xffffff, width: 4 });
-  slings.poly([510, 720, 388, 796, 462, 818]).fill({ color: 0x80f2ff, alpha: 0.82 }).stroke({ color: 0xffffff, width: 4 });
+  slings.poly([96, 724, 196, 784, 142, 828]).fill({ color: 0xff6db6, alpha: 0.82 }).stroke({ color: 0xffffff, width: 4 });
+  slings.poly([524, 724, 424, 784, 462, 818]).fill({ color: 0x80f2ff, alpha: 0.82 }).stroke({ color: 0xffffff, width: 4 });
   tableLayer.addChild(slings);
 }
 
