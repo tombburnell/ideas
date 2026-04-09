@@ -1,0 +1,445 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BillingProvider {
+  LEMON_SQUEEZY
+  STRIPE
+  PAYPAL
+}
+
+enum PlanStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  PAUSED
+  CANCELED
+  EXPIRED
+}
+
+enum QuotaPeriod {
+  LIFETIME
+  MONTH
+  YEAR
+  BILLING_PERIOD
+}
+
+enum RegionScopeType {
+  GLOBAL
+  COUNTRY
+  REGION
+}
+
+enum ActionType {
+  CHECKOUT_CREATED
+  CHECKOUT_COMPLETED
+  UPGRADE_REQUESTED
+  DOWNGRADE_REQUESTED
+  CANCEL_REQUESTED
+  CANCEL_SCHEDULED
+  CANCELED
+  RESYNC_REQUESTED
+  RESYNC_COMPLETED
+  PORTAL_URL_CREATED
+  MANUAL_OVERRIDE_APPLIED
+  MANUAL_OVERRIDE_REMOVED
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  brands      Brand[]
+  tenants     Tenant[]
+  adminScopes AdminScope[]
+}
+
+model Brand {
+  id         String   @id @default(cuid())
+  customerId String
+  name       String
+  slug       String
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenants  Tenant[]
+
+  @@unique([customerId, slug])
+}
+
+model Tenant {
+  id              String   @id @default(cuid())
+  customerId      String
+  brandId         String?
+  name            String
+  slug            String
+  publicAppName   String?
+  defaultCurrency String   @db.VarChar(3)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  brand            Brand?   @relation(fields: [brandId], references: [id], onDelete: SetNull)
+
+  providerAccounts BillingProviderAccount[]
+  productFamilies  ProductFamily[]
+  plans              Plan[]
+  planPrices         PlanPrice[]
+  features           Feature[]
+  externalUsers      ExternalUser[]
+  providerCustomers  ProviderCustomer[]
+  subscriptions      Subscription[]
+  adminScopes        AdminScope[]
+  apiKeys            TenantApiKey[]
+  providerEvents     ProviderEventLog[]
+  manualOverrides    ManualEntitlementOverride[]
+  subscriptionActionLogs SubscriptionActionLog[]
+
+  @@unique([customerId, slug])
+}
+
+model TenantApiKey {
+  id         String    @id @default(cuid())
+  tenantId   String
+  name       String
+  keyHash    String
+  keyPrefix  String
+  active     Boolean   @default(true)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([keyPrefix])
+}
+
+model BillingProviderAccount {
+  id                    String          @id @default(cuid())
+  tenantId              String
+  provider              BillingProvider
+  displayName           String
+  accountRef            String
+  isDefault             Boolean         @default(true)
+  /// AES-256-GCM encrypted JSON (provider API keys, store ids). Decrypt at runtime only.
+  credentialsEncrypted  String          @db.Text
+  /// Optional encrypted webhook signing secret
+  webhookSecretEncrypted String?        @db.Text
+  active                Boolean         @default(true)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  tenant            Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plans             PlanPrice[]
+  providerCustomers ProviderCustomer[]
+  subscriptions     Subscription[]
+  eventLogs         ProviderEventLog[]
+
+  @@unique([tenantId, provider, accountRef])
+}
+
+model ProductFamily {
+  id            String   @id @default(cuid())
+  tenantId      String
+  key           String
+  name          String
+  description   String?
+  marketingCopy Json?
+  active        Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plans  Plan[]
+
+  @@unique([tenantId, key])
+}
+
+model Plan {
+  id              String      @id @default(cuid())
+  tenantId        String
+  productFamilyId String
+  key             String
+  name            String
+  description     String?
+  status          PlanStatus  @default(DRAFT)
+  isPrimary       Boolean     @default(false)
+  isPublic        Boolean     @default(true)
+  active          Boolean     @default(true)
+  marketingCopy   Json?
+  comparisonData  Json?
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productFamily ProductFamily @relation(fields: [productFamilyId], references: [id], onDelete: Cascade)
+  prices        PlanPrice[]
+  features      PlanFeature[]
+  quotas        PlanQuota[]
+  tags          PlanTag[]
+  subscriptions Subscription[]
+
+  @@unique([tenantId, key])
+}
+
+model PlanPrice {
+  id                   String          @id @default(cuid())
+  tenantId             String
+  planId               String
+  providerAccountId    String
+  provider             BillingProvider
+  externalPriceId      String
+  externalVariantId    String?
+  name                 String?
+  currency             String          @db.VarChar(3)
+  unitAmountMinor      Int
+  billingInterval      String
+  billingIntervalCount Int             @default(1)
+  trialDays            Int?
+  regionScopeType      RegionScopeType @default(GLOBAL)
+  regionCode           String?
+  isDefault            Boolean         @default(false)
+  active               Boolean         @default(true)
+  checkoutConfig       Json?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  tenant          Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan            Plan                   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  providerAccount BillingProviderAccount @relation(fields: [providerAccountId], references: [id], onDelete: Cascade)
+  subscriptions   Subscription[]
+
+  @@unique([provider, externalPriceId])
+  @@index([tenantId, planId])
+}
+
+model Feature {
+  id          String   @id @default(cuid())
+  tenantId    String
+  key         String
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planFeatures PlanFeature[]
+
+  @@unique([tenantId, key])
+}
+
+model PlanFeature {
+  id        String   @id @default(cuid())
+  planId    String
+  featureId String
+  enabled   Boolean  @default(true)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, featureId])
+}
+
+model PlanQuota {
+  id         String      @id @default(cuid())
+  planId     String
+  key        String
+  name       String
+  limitValue Int
+  period     QuotaPeriod @default(BILLING_PERIOD)
+  rollover   Boolean     @default(false)
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, key])
+}
+
+model PlanTag {
+  id        String   @id @default(cuid())
+  planId    String
+  tag       String
+  createdAt DateTime @default(now())
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, tag])
+}
+
+model ExternalUser {
+  id             String   @id @default(cuid())
+  tenantId       String
+  externalUserId String
+  email          String?
+  displayName    String?
+  metadata       Json?
+  firstSeenAt    DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  providerCustomers   ProviderCustomer[]
+  subscriptions       Subscription[]
+  manualOverrides     ManualEntitlementOverride[]
+
+  @@unique([tenantId, externalUserId])
+  @@index([tenantId, email])
+}
+
+model ProviderCustomer {
+  id                  String            @id @default(cuid())
+  tenantId            String
+  externalUserIdRef   String
+  providerAccountId   String
+  provider            BillingProvider
+  externalCustomerId  String
+  email               String?
+  metadata            Json?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  tenant          Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  externalUser    ExternalUser           @relation(fields: [externalUserIdRef], references: [id], onDelete: Cascade)
+  providerAccount BillingProviderAccount @relation(fields: [providerAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, externalCustomerId])
+  @@unique([externalUserIdRef, providerAccountId])
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  tenantId               String
+  externalUserIdRef      String
+  planId                 String
+  planPriceId            String
+  providerAccountId      String
+  provider               BillingProvider
+  externalSubscriptionId String
+  externalOrderId        String?
+  status                 SubscriptionStatus
+  cancelAtPeriodEnd      Boolean            @default(false)
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  activatedAt            DateTime?
+  canceledAt             DateTime?
+  endedAt                DateTime?
+  lastProviderSyncAt     DateTime?
+  metadata               Json?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  tenant          Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  externalUser    ExternalUser           @relation(fields: [externalUserIdRef], references: [id], onDelete: Cascade)
+  plan            Plan                   @relation(fields: [planId], references: [id], onDelete: Restrict)
+  planPrice       PlanPrice              @relation(fields: [planPriceId], references: [id], onDelete: Restrict)
+  providerAccount BillingProviderAccount @relation(fields: [providerAccountId], references: [id], onDelete: Restrict)
+  actionLogs      SubscriptionActionLog[]
+  overrides       ManualEntitlementOverride[]
+
+  @@unique([provider, externalSubscriptionId])
+  @@index([tenantId, externalUserIdRef, status])
+}
+
+model ManualEntitlementOverride {
+  id                String    @id @default(cuid())
+  subscriptionId    String?
+  externalUserIdRef String
+  tenantId          String
+  featureKey        String?
+  quotaKey          String?
+  enabled           Boolean?
+  quotaOverride     Int?
+  startsAt          DateTime?
+  endsAt            DateTime?
+  reason            String?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  externalUser ExternalUser  @relation(fields: [externalUserIdRef], references: [id], onDelete: Cascade)
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, externalUserIdRef])
+}
+
+model ProviderEventLog {
+  id                  String          @id @default(cuid())
+  tenantId            String
+  providerAccountId   String
+  provider            BillingProvider
+  eventType           String
+  externalEventId     String?
+  status              String
+  payload             Json
+  errorMessage        String?
+  processedAt         DateTime?
+  createdAt           DateTime        @default(now())
+
+  tenant          Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  providerAccount BillingProviderAccount @relation(fields: [providerAccountId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, provider, createdAt])
+  @@index([provider, externalEventId])
+}
+
+model SubscriptionActionLog {
+  id                String     @id @default(cuid())
+  tenantId          String
+  subscriptionId    String?
+  externalUserIdRef String?
+  actionType        ActionType
+  actorType         String
+  actorRef          String?
+  requestPayload    Json?
+  responsePayload   Json?
+  status            String
+  createdAt         DateTime   @default(now())
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+}
+
+model AdminScope {
+  id         String   @id @default(cuid())
+  customerId String?
+  tenantId   String?
+  email      String
+  role       String
+  createdAt  DateTime @default(now())
+
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tenant   Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
