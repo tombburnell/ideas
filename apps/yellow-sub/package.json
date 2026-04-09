@@ -1,0 +1,18 @@
+{
+  "name": "yellow-sub",
+  "private": true,
+  "workspaces": [
+    "api",
+    "admin-web",
+    "packages/sdk"
+  ],
+  "scripts": {
+    "build": "npm run build -w @yellow-sub/sdk && npm run build -w @yellow-sub/api && npm run build -w @yellow-sub/admin-web",
+    "dev": "concurrently -n api,admin \"npm run dev -w @yellow-sub/api\" \"npm run dev -w @yellow-sub/admin-web\"",
+    "lint": "npm run lint -w @yellow-sub/api --if-present && npm run lint -w @yellow-sub/admin-web --if-present",
+    "test": "npm run test -w @yellow-sub/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
