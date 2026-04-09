@@ -1,5 +1,7 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  /// bookworm/node:22 uses OpenSSL 3; CI/dev may report 1.1 — ship both engines for Docker + local
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
