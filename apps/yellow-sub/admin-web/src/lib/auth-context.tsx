@@ -32,13 +32,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void getRedirectResult(auth).catch(() => {
-      /* no redirect in progress or already consumed */
-    });
-    return onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
+    let unsub: (() => void) | undefined;
+    let cancelled = false;
+    void (async () => {
+      await auth.authStateReady();
+      if (cancelled) return;
+      try {
+        await getRedirectResult(auth);
+      } catch {
+        /* no redirect pending */
+      }
+      if (cancelled) return;
+      unsub = onAuthStateChanged(auth, (u) => {
+        setUser(u);
+        setLoading(false);
+      });
+    })();
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
   }, []);
 
   /** Redirect flow avoids popup issues (third-party cookies, COOP, blockers). */
