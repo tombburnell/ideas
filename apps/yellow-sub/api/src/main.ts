@@ -23,6 +23,11 @@ async function bootstrap() {
     app.use(httpLoggingMiddleware);
   }
 
+  // Wrong path typo: __firebase vs __/firebase (SDK / copy-paste)
+  expressApp.get('/__firebase/init.json', (_req: Request, res: Response) => {
+    res.redirect(301, '/__/firebase/init.json');
+  });
+
   /** Public: confirms OAuth redirect config (Firebase sign-in itself is browser-only until /api/v1/admin/*). */
   expressApp.get('/auth/debug', (_req: Request, res: Response) => {
     const webKey = appConfig.get('firebaseWebApiKey', { infer: true });

@@ -19,11 +19,11 @@ Central config is loaded from environment variables (see `api/.env.example`).
 | `DATABASE_URL` | PostgreSQL connection string |
 | `REDIS_URL` | Redis for BullMQ workers |
 | `CREDENTIALS_ENCRYPTION_KEY` | 64 hex chars (32 bytes) — encrypts provider `credentialsEncrypted` / webhook secrets |
-| `PUBLIC_BASE_URL` | Public URL for redirects and docs |
+| `PUBLIC_BASE_URL` | Public URL (no trailing slash); drives `authDomain` in `/__/firebase/init.json` unless `FIREBASE_AUTH_DOMAIN` is set |
 | `ADMIN_EMAIL_ALLOWLIST` | Comma-separated emails allowed for admin API (Firebase) |
 | `FIREBASE_PROJECT_ID` | Firebase project (also used to redirect `/__/auth/handler` if OAuth hits your custom domain) |
-| `FIREBASE_WEB_API_KEY` | Same value as `VITE_FIREBASE_API_KEY` — serves `GET /__/firebase/init.json` (Firebase Hosting URL) when not using Firebase Hosting |
-| `PUBLIC_BASE_URL` / `FIREBASE_AUTH_DOMAIN` | Used to build `authDomain` in that `init.json` — use your real public host (e.g. `https://yellowsub.vibedust.com`) |
+| `FIREBASE_WEB_API_KEY` | Same value as `VITE_FIREBASE_API_KEY` — serves `GET /__/firebase/init.json` when not using Firebase Hosting |
+| `FIREBASE_AUTH_DOMAIN` | Optional override for `init.json` `authDomain` (default: hostname of `PUBLIC_BASE_URL`) |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Service account JSON string for Firebase Admin |
 | `ADMIN_DIST_PATH` | Relative path from `api/` cwd to admin `dist` (Docker: `../admin-web/dist`) |
 | `DISABLE_WORKERS` | Set `true` to skip BullMQ registration |
@@ -45,7 +45,8 @@ OpenAPI: `http://localhost:4000/api/docs`
 2. Set **`FIREBASE_WEB_API_KEY`** to the **same** string as **`VITE_FIREBASE_API_KEY`** (web API key from Firebase Console).
 3. Admin build: set **`VITE_PUBLIC_ORIGIN=https://yellowsub.vibedust.com`** so **`authDomain`** is `yellowsub.vibedust.com` (must match `init.json`).
 4. Add **`yellowsub.vibedust.com`** under Firebase **Authentication → Authorized domains** (already done).
-5. **Spelling:** host must be **`*.firebaseapp.com`**, never **`firebase.com`** (wrong domain).
+5. **Spelling:** host must be **`*.firebaseapp.com`** (exactly one **`base`** in the name). Common mistakes: **`firebasebaseapp.com`** (extra `base`), **`firebase.com`**, or wrong project id (**`fb11c`** vs **`fbb1c`**).
+6. Path must be **`/__/firebase/init.json`** (slash after `__`), not `__firebase`.
 
 ### Debugging admin (Firebase) sign-in
 
