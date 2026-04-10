@@ -20,6 +20,8 @@ import { auth } from './firebase';
 type AuthState = {
   user: User | null;
   loading: boolean;
+  /** Set when Google redirect returns but sign-in failed (check OAuth redirect URIs in Google Cloud). */
+  redirectError: string | null;
   signInWithGoogle: () => Promise<void>;
   signOutUser: () => Promise<void>;
   getIdToken: () => Promise<string | null>;
@@ -30,6 +32,7 @@ const Ctx = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [redirectError, setRedirectError] = useState<string | null>(null);
 
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -39,12 +42,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       try {
         await getRedirectResult(auth);
-      } catch {
-        /* no redirect pending */
+      } catch (e: unknown) {
+        const code =
+          e && typeof e === 'object' && 'code' in e
+            ? String((e as { code?: string }).code)
+            : '';
+        // auth/no-auth-event = normal when user did not just return from redirect
+        if (code && code !== 'auth/no-auth-event') {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error('[auth] getRedirectResult failed:', code, msg);
+          setRedirectError(
+            `${msg} (${code}). If this persists, add the Firebase auth handler URL to Google Cloud OAuth "Authorized redirect URIs".`,
+          );
+        }
       }
       if (cancelled) return;
       unsub = onAuthStateChanged(auth, (u) => {
         setUser(u);
+        if (u) setRedirectError(null);
         setLoading(false);
       });
     })();
@@ -74,11 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       loading,
+      redirectError,
       signInWithGoogle,
       signOutUser,
       getIdToken,
     }),
-    [user, loading, signInWithGoogle, signOutUser, getIdToken],
+    [user, loading, redirectError, signInWithGoogle, signOutUser, getIdToken],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
