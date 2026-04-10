@@ -110,7 +110,12 @@ async function bootstrap() {
     res.type('html').send(html);
     return;
   });
-  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginOpenerPolicy: false,
+    }),
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
