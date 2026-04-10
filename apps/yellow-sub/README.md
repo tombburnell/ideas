@@ -48,6 +48,14 @@ OpenAPI: `http://localhost:4000/api/docs`
 5. **Spelling:** host must be **`*.firebaseapp.com`** (exactly one **`base`** in the name). Common mistakes: **`firebasebaseapp.com`** (extra `base`), **`firebase.com`**, or wrong project id (**`fb11c`** vs **`fbb1c`**).
 6. Path must be **`/__/firebase/init.json`** (slash after `__`), not `__firebase`.
 
+### Red 404 on `yellowsub-fbb1c.firebaseapp.com/__/firebase/init.json`
+
+Firebase Auth loads an **iframe** from **`https://<project>.firebaseapp.com`**. That iframe requests **`/__/firebase/init.json`** on **that** host — which is **Firebase Hosting**, not your Coolify app. If you never enabled Hosting, that URL can show **“Site not found”** in the Network tab. Your **`yellowsub.vibedust.com/__/firebase/init.json`** is what we serve for the **main** app; the iframe 404 is often **harmless** if sign-in still completes.
+
+To remove the 404: Firebase Console → **Hosting** → **Get started** (creates the default `*.firebaseapp.com` site; you don’t have to deploy your app there). Or ignore the line if auth works.
+
+In **production** (`NODE_ENV=production` and `ADMIN_DIST_PATH` set), the API **will not start** without **`FIREBASE_WEB_API_KEY`**, **`FIREBASE_PROJECT_ID`**, and **`PUBLIC_BASE_URL`** (or **`FIREBASE_AUTH_DOMAIN`**).
+
 ### Debugging admin (Firebase) sign-in
 
 - **Google sign-in runs entirely in the browser** until you load data. The API does **not** log `AdminFirebaseGuard` until a request hits `/api/v1/admin/*` with a Bearer token.

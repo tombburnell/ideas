@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import { AppModule } from './app.module';
 import type { AppConfiguration } from './config/configuration';
+import { assertProductionFirebaseEnv } from './config/validate-production-firebase';
 import { httpLoggingMiddleware } from './common/logging/http-logging.middleware';
 
 async function bootstrap() {
@@ -37,8 +38,8 @@ async function bootstrap() {
       oauthHandlerRedirectConfigured: Boolean(firebaseProjectId),
       firebaseInitJsonReady: Boolean(webKey && firebaseProjectId && authDom),
       authDomainForInitJson: authDom || null,
-      hint:
-        'Use authDomain = your public host (yellowsub.vibedust.com) and set FIREBASE_WEB_API_KEY same as VITE_FIREBASE_API_KEY so GET /__/firebase/init.json works without Firebase Hosting. Domain must be *.firebaseapp.com not *.firebase.com.',
+      firebaseIframeNote:
+        'Browser may still request https://<project>.firebaseapp.com/__/firebase/init.json inside the Auth iframe; that URL is Firebase Hosting. If you see 404 there, enable Firebase Hosting once (default site) or ignore if sign-in still works — your app origin init.json is yellowsub.vibedust.com.',
     });
   });
 
@@ -139,6 +140,8 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, openApiConfig);
   SwaggerModule.setup('api/docs', app, document);
+
+  assertProductionFirebaseEnv(appConfig, logger);
 
   const port = appConfig.get('port', { infer: true });
   const publicBaseUrl = appConfig.get('publicBaseUrl', { infer: true });
