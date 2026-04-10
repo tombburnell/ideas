@@ -18,26 +18,40 @@ async function bootstrap() {
   const appConfig = app.get(ConfigService<AppConfiguration, true>);
   const expressApp = app.getHttpAdapter().getInstance() as express.Application;
   const firebaseProjectId = appConfig.get('firebaseProjectId', { infer: true }).trim();
+
+  if (appConfig.get('logHttp', { infer: true })) {
+    app.use(httpLoggingMiddleware);
+  }
+
+  /** Public: confirms OAuth redirect config (Firebase sign-in itself is browser-only until /api/v1/admin/*). */
+  expressApp.get('/auth/debug', (_req: Request, res: Response) => {
+    res.json({
+      firebaseProjectId: firebaseProjectId || null,
+      oauthHandlerRedirectConfigured: Boolean(firebaseProjectId),
+      hint:
+        'If Google returns to https://your-domain/__/auth/handler, this server must redirect to *.firebaseapp.com (needs firebaseProjectId). Browser Firebase logs are in DevTools console [YellowSub auth].',
+    });
+  });
+
   // If OAuth returns to https://custom/__/auth/handler, forward to Firebase's handler.
   expressApp.use((req: Request, res: Response, next: NextFunction) => {
     const pathname = (req.originalUrl ?? req.url ?? '').split('?')[0];
     if (req.method !== 'GET' || pathname !== '/__/auth/handler') {
       return next();
     }
+    const host = req.headers.host ?? '-';
+    logger.log(`OAuth return hit this server: GET /__/auth/handler host=${host}`);
     if (!firebaseProjectId) {
       logger.warn(
-        'GET /__/auth/handler but firebaseProjectId empty — set FIREBASE_PROJECT_ID in Coolify',
+        'Cannot redirect to Firebase: firebaseProjectId empty — set FIREBASE_PROJECT_ID (or project_id in FIREBASE_SERVICE_ACCOUNT_JSON)',
       );
       return next();
     }
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
     const target = `https://${firebaseProjectId}.firebaseapp.com/__/auth/handler${qs}`;
-    logger.log(`redirect /__/auth/handler -> firebaseapp (${firebaseProjectId})`);
+    logger.log(`redirect 302 to Firebase auth handler (project=${firebaseProjectId})`);
     return res.redirect(302, target);
   });
-  if (appConfig.get('logHttp', { infer: true })) {
-    app.use(httpLoggingMiddleware);
-  }
   app.use(helmet({ contentSecurityPolicy: false }));
   app.useGlobalPipes(
     new ValidationPipe({

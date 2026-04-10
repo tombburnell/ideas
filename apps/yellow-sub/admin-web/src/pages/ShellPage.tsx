@@ -11,6 +11,7 @@ export function ShellPage() {
     queryKey: ['admin', 'customers'],
     queryFn: async () => {
       const token = await getIdToken();
+      console.info('[YellowSub auth] calling admin API /customers (server will log AdminFirebaseGuard if token ok)');
       const res = await adminFetch('/api/v1/admin/customers', token);
       if (!res.ok) throw new Error(await res.text());
       return res.json() as Promise<Customer[]>;

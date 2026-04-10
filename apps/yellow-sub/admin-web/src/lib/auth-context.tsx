@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsub: (() => void) | undefined;
     let cancelled = false;
     void (async () => {
+      console.info('[YellowSub auth] initializing (Firebase runs in browser; API logs only when you call /api/v1/admin/*)');
       try {
         await setPersistence(auth, browserLocalPersistence);
       } catch {
@@ -49,7 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const cred = await getRedirectResult(auth);
         if (cred?.user && !cancelled) {
-          console.info('[auth] redirect sign-in ok', cred.user.uid);
+          console.info('[YellowSub auth] redirect sign-in ok uid=', cred.user.uid);
+        } else {
+          console.info('[YellowSub auth] getRedirectResult: no pending redirect (normal on fresh load)');
         }
       } catch (e: unknown) {
         const code =
@@ -58,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             : '';
         if (code && code !== 'auth/no-auth-event') {
           const msg = e instanceof Error ? e.message : String(e);
-          console.error('[auth] getRedirectResult failed:', code, msg);
+          console.error('[YellowSub auth] getRedirectResult failed:', code, msg);
           setRedirectError(
             `${msg} (${code}). If this persists, add the Firebase auth handler URL to Google Cloud OAuth "Authorized redirect URIs".`,
           );
@@ -67,6 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await auth.authStateReady();
       if (cancelled) return;
       unsub = onAuthStateChanged(auth, (u) => {
+        if (u) {
+          console.info('[YellowSub auth] signed in', u.email ?? u.uid);
+        } else {
+          console.info('[YellowSub auth] no Firebase user session (signed out or not completed)');
+        }
         setUser(u);
         if (u) setRedirectError(null);
         setLoading(false);
