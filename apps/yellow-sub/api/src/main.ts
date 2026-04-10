@@ -47,10 +47,16 @@ async function bootstrap() {
       );
       return next();
     }
-    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
-    const target = `https://${firebaseProjectId}.firebaseapp.com/__/auth/handler${qs}`;
-    logger.log(`redirect 302 to Firebase auth handler (project=${firebaseProjectId})`);
-    return res.redirect(302, target);
+    // OAuth response may be in location.hash (not sent to server). A 302 Location URL
+    // cannot include the fragment — we must redirect in the browser so hash is preserved.
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Redirecting…</title></head><body>
+<script>(function(){var b=${JSON.stringify(`https://${firebaseProjectId}.firebaseapp.com/__/auth/handler`)};location.replace(b+(location.search||'')+(location.hash||''));})();</script>
+<p>Completing sign-in…</p></body></html>`;
+    logger.log(
+      `OAuth /__/auth/handler: sending client-side redirect to firebaseapp (preserves hash) project=${firebaseProjectId}`,
+    );
+    res.type('html').send(html);
+    return;
   });
   app.use(helmet({ contentSecurityPolicy: false }));
   app.useGlobalPipes(

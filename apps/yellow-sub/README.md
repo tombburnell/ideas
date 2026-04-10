@@ -41,7 +41,7 @@ OpenAPI: `http://localhost:4000/api/docs`
 
 - **Google sign-in runs entirely in the browser** until you load data. The API does **not** log `AdminFirebaseGuard` until a request hits `/api/v1/admin/*` with a Bearer token.
 - **Browser:** open DevTools → Console and filter for **`[YellowSub auth]`** (redirect result, `onAuthStateChanged`, errors).
-- **Server:** `GET https://<your-host>/auth/debug` returns whether `firebaseProjectId` is set for the `/__/auth/handler` → `*.firebaseapp.com` redirect. If Google sends users to `https://your-domain/__/auth/handler`, watch logs for `OAuth return hit this server` and `redirect 302 to Firebase auth handler`.
+- **Server:** `GET https://<your-host>/auth/debug` returns whether `firebaseProjectId` is set. For `GET /__/auth/handler`, the server returns a **small HTML page** that redirects in the **browser** to `*.firebaseapp.com/__/auth/handler` including **query and hash** (a 302 would drop the OAuth tokens in the URL fragment).
 
 ## Integration API
 
