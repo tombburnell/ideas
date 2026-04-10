@@ -2,10 +2,20 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   ActionType,
   Prisma,
-  QuotaPeriod,
   SubscriptionStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+export type ResolvedFeature = {
+  type: 'BOOLEAN' | 'LIMIT' | 'CONFIG';
+  includedAmount?: number | null;
+  softLimit?: number | null;
+  hardLimit?: number | null;
+  period?: string;
+  configValue?: string;
+  tierMode?: 'GRADUATED' | 'VOLUME';
+  tiers?: { from: number; to: number | null; unitPrice: number; flatFee: number; currency: string }[];
+};
 
 export type ResolvedEntitlements = {
   tenant: { id: string; slug: string };
@@ -17,11 +27,7 @@ export type ResolvedEntitlements = {
     currentPeriodEnd: string | null;
     cancelAtPeriodEnd: boolean;
   } | null;
-  features: Record<string, boolean>;
-  quotas: Record<
-    string,
-    { limit: number; period: QuotaPeriod }
-  >;
+  features: Record<string, ResolvedFeature>;
   actions: {
     canUpgrade: boolean;
     canDowngrade: boolean;
@@ -67,8 +73,7 @@ export class EntitlementsService {
       include: {
         plan: {
           include: {
-            features: { include: { feature: true } },
-            quotas: true,
+            features: { include: { feature: true, tiers: true } },
           },
         },
       },
@@ -83,28 +88,47 @@ export class EntitlementsService {
       },
     });
 
-    const features: Record<string, boolean> = {};
-    const quotas: Record<string, { limit: number; period: QuotaPeriod }> = {};
+    const features: Record<string, ResolvedFeature> = {};
 
     if (sub) {
       for (const pf of sub.plan.features) {
-        if (pf.feature.active) {
-          features[pf.feature.key] = pf.enabled;
+        if (!pf.feature.active) continue;
+        const resolved: ResolvedFeature = { type: pf.feature.type };
+        if (pf.feature.type === 'LIMIT') {
+          resolved.includedAmount = pf.includedAmount;
+          resolved.softLimit = pf.softLimit;
+          resolved.hardLimit = pf.hardLimit;
+          resolved.period = pf.limitPeriod ?? undefined;
+          if (pf.tierMode) {
+            resolved.tierMode = pf.tierMode;
+            resolved.tiers = pf.tiers.map((t) => ({
+              from: t.fromUnit,
+              to: t.toUnit,
+              unitPrice: t.unitPriceMinor,
+              flatFee: t.flatFeeMinor,
+              currency: t.currency,
+            }));
+          }
+        } else if (pf.feature.type === 'CONFIG') {
+          resolved.configValue = pf.configValue ?? undefined;
         }
-      }
-      for (const q of sub.plan.quotas) {
-        quotas[q.key] = { limit: q.limitValue, period: q.period };
+        features[pf.feature.key] = resolved;
       }
     }
 
     for (const o of overrides) {
       if (o.featureKey != null && o.enabled != null) {
-        features[o.featureKey] = o.enabled;
+        if (o.enabled) {
+          features[o.featureKey] = features[o.featureKey] ?? { type: 'BOOLEAN' };
+        } else {
+          delete features[o.featureKey];
+        }
       }
       if (o.quotaKey != null && o.quotaOverride != null) {
-        quotas[o.quotaKey] = {
-          limit: o.quotaOverride,
-          period: QuotaPeriod.BILLING_PERIOD,
+        features[o.quotaKey] = {
+          ...features[o.quotaKey],
+          type: 'LIMIT',
+          hardLimit: o.quotaOverride,
         };
       }
     }
@@ -129,7 +153,6 @@ export class EntitlementsService {
           }
         : null,
       features,
-      quotas,
       actions: {
         canUpgrade: !!activeLike,
         canDowngrade: !!activeLike,

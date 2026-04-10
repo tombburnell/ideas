@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { QuotaPeriod, SubscriptionStatus } from '@prisma/client';
+import { SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EntitlementsService } from './entitlements.service';
 
@@ -24,11 +24,26 @@ describe('EntitlementsService', () => {
             name: 'Pro',
             features: [
               {
-                enabled: true,
-                feature: { key: 'f1', active: true },
+                feature: { key: 'f1', active: true, type: 'BOOLEAN' },
+                includedAmount: null,
+                softLimit: null,
+                hardLimit: null,
+                limitPeriod: null,
+                tierMode: null,
+                configValue: null,
+                tiers: [],
+              },
+              {
+                feature: { key: 'q1', active: true, type: 'LIMIT' },
+                includedAmount: 10,
+                softLimit: 8,
+                hardLimit: 10,
+                limitPeriod: 'MONTH',
+                tierMode: null,
+                configValue: null,
+                tiers: [],
               },
             ],
-            quotas: [{ key: 'q1', limitValue: 10, period: QuotaPeriod.MONTH }],
           },
           cancelAtPeriodEnd: false,
           currentPeriodEnd: new Date('2026-01-01'),
@@ -50,7 +65,13 @@ describe('EntitlementsService', () => {
 
     const s = moduleRef.get(EntitlementsService);
     const r = await s.resolveForExternalUser('t1', 'ext-1');
-    expect(r.features.f1).toBe(false);
-    expect(r.quotas.q1.limit).toBe(10);
+    expect(r.features.f1).toBeUndefined();
+    expect(r.features.q1).toEqual({
+      type: 'LIMIT',
+      includedAmount: 10,
+      softLimit: 8,
+      hardLimit: 10,
+      period: 'MONTH',
+    });
   });
 });

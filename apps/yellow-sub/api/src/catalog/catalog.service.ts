@@ -30,8 +30,7 @@ export class CatalogService {
             prices: {
               where: { active: true },
             },
-            features: { include: { feature: true } },
-            quotas: true,
+            features: { include: { feature: true, tiers: true } },
             tags: true,
           },
         },
@@ -81,8 +80,7 @@ export class CatalogService {
       include: {
         productFamily: true,
         prices: { where: { active: true } },
-        features: { include: { feature: true } },
-        quotas: true,
+        features: { include: { feature: true, tiers: true } },
         tags: true,
       },
     });
@@ -100,7 +98,6 @@ export class CatalogService {
         comparisonData: p.comparisonData,
         marketingCopy: p.marketingCopy,
         features: p.features,
-        quotas: p.quotas,
         prices: p.prices,
         tags: p.tags,
       })),

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -11,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { BillingProvider, PlanStatus } from '@prisma/client';
+import { BillingProvider, FeatureType, ConfigType, PlanStatus, QuotaPeriod, TierMode } from '@prisma/client';
 import { AdminFirebaseGuard } from '../../auth/guards/admin-firebase.guard';
 import { CredentialsCryptoService } from '../../common/crypto/credentials-crypto.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -160,6 +161,14 @@ export class AdminController {
     });
   }
 
+  @Get('tenants/:tenantId/product-families')
+  listProductFamilies(@Param('tenantId') tenantId: string) {
+    return this.prisma.productFamily.findMany({
+      where: { tenantId },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
   @Post('tenants/:tenantId/product-families')
   createProductFamily(
     @Param('tenantId') tenantId: string,
@@ -167,6 +176,44 @@ export class AdminController {
   ) {
     return this.prisma.productFamily.create({
       data: { tenantId, ...body },
+    });
+  }
+
+  @Put('product-families/:id')
+  updateProductFamily(
+    @Param('id') id: string,
+    @Body() body: { name?: string; description?: string; active?: boolean },
+  ) {
+    return this.prisma.productFamily.update({ where: { id }, data: body });
+  }
+
+  @Delete('product-families/:id')
+  async deleteProductFamily(@Param('id') id: string) {
+    const plans = await this.prisma.plan.count({ where: { productFamilyId: id } });
+    if (plans > 0) {
+      throw new BadRequestException(`Cannot delete: ${plans} plan(s) still reference this product family`);
+    }
+    return this.prisma.productFamily.delete({ where: { id } });
+  }
+
+  @Get('tenants/:tenantId/plans')
+  listPlans(@Param('tenantId') tenantId: string) {
+    return this.prisma.plan.findMany({
+      where: { tenantId },
+      include: { productFamily: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  @Get('plans/:planId')
+  getPlan(@Param('planId') planId: string) {
+    return this.prisma.plan.findUniqueOrThrow({
+      where: { id: planId },
+      include: {
+        productFamily: true,
+        prices: { include: { providerAccount: true } },
+        features: { include: { feature: true, tiers: true } },
+      },
     });
   }
 
@@ -192,6 +239,26 @@ export class AdminController {
         status: body.status ?? PlanStatus.DRAFT,
       },
     });
+  }
+
+  @Put('plans/:planId')
+  updatePlan(
+    @Param('planId') planId: string,
+    @Body() body: { name?: string; description?: string; status?: PlanStatus; active?: boolean },
+  ) {
+    return this.prisma.plan.update({ where: { id: planId }, data: body });
+  }
+
+  @Delete('plans/:planId')
+  async deletePlan(@Param('planId') planId: string) {
+    const subs = await this.prisma.subscription.count({ where: { planId } });
+    if (subs > 0) {
+      throw new BadRequestException(`Cannot delete: ${subs} subscription(s) still reference this plan`);
+    }
+    await this.prisma.planFeature.deleteMany({ where: { planId } });
+    await this.prisma.planPrice.deleteMany({ where: { planId } });
+    await this.prisma.planTag.deleteMany({ where: { planId } });
+    return this.prisma.plan.delete({ where: { id: planId } });
   }
 
   @Post('tenants/:tenantId/plan-prices')
@@ -226,26 +293,144 @@ export class AdminController {
     });
   }
 
+  @Get('tenants/:tenantId/features')
+  listFeatures(@Param('tenantId') tenantId: string) {
+    return this.prisma.feature.findMany({
+      where: { tenantId },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   @Post('tenants/:tenantId/features')
   createFeature(
     @Param('tenantId') tenantId: string,
-    @Body() body: { key: string; name: string; description?: string },
+    @Body() body: {
+      key: string;
+      name: string;
+      description?: string;
+      type?: FeatureType;
+      unitLabel?: string;
+      configType?: ConfigType;
+      configOptions?: string[];
+    },
   ) {
-    return this.prisma.feature.create({ data: { tenantId, ...body } });
+    return this.prisma.feature.create({
+      data: {
+        tenantId,
+        key: body.key,
+        name: body.name,
+        description: body.description,
+        type: body.type ?? FeatureType.BOOLEAN,
+        unitLabel: body.unitLabel,
+        configType: body.configType,
+        configOptions: body.configOptions,
+      },
+    });
+  }
+
+  @Put('features/:featureId')
+  updateFeature(
+    @Param('featureId') featureId: string,
+    @Body() body: {
+      name?: string;
+      description?: string;
+      active?: boolean;
+      type?: FeatureType;
+      unitLabel?: string;
+      configType?: ConfigType;
+      configOptions?: string[];
+    },
+  ) {
+    return this.prisma.feature.update({ where: { id: featureId }, data: body });
+  }
+
+  @Delete('features/:featureId')
+  async deleteFeature(@Param('featureId') featureId: string) {
+    const linked = await this.prisma.planFeature.count({ where: { featureId } });
+    if (linked > 0) {
+      throw new BadRequestException(`Cannot delete: feature is linked to ${linked} plan(s)`);
+    }
+    return this.prisma.feature.delete({ where: { id: featureId } });
   }
 
   @Post('tenants/:tenantId/plans/:planId/plan-features')
   linkPlanFeature(
     @Param('planId') planId: string,
-    @Body() body: { featureId: string; enabled?: boolean },
+    @Body() body: {
+      featureId: string;
+      includedAmount?: number;
+      softLimit?: number;
+      hardLimit?: number;
+      limitPeriod?: QuotaPeriod;
+      tierMode?: TierMode;
+      configValue?: string;
+    },
   ) {
     return this.prisma.planFeature.create({
       data: {
         planId,
         featureId: body.featureId,
-        enabled: body.enabled ?? true,
+        includedAmount: body.includedAmount,
+        softLimit: body.softLimit,
+        hardLimit: body.hardLimit,
+        limitPeriod: body.limitPeriod,
+        tierMode: body.tierMode,
+        configValue: body.configValue,
       },
+      include: { feature: true, tiers: true },
     });
+  }
+
+  @Put('plan-features/:planFeatureId')
+  updatePlanFeature(
+    @Param('planFeatureId') planFeatureId: string,
+    @Body() body: {
+      includedAmount?: number | null;
+      softLimit?: number | null;
+      hardLimit?: number | null;
+      limitPeriod?: QuotaPeriod | null;
+      tierMode?: TierMode | null;
+      configValue?: string | null;
+    },
+  ) {
+    return this.prisma.planFeature.update({
+      where: { id: planFeatureId },
+      data: body,
+      include: { feature: true, tiers: true },
+    });
+  }
+
+  @Delete('plan-features/:planFeatureId')
+  unlinkPlanFeature(@Param('planFeatureId') planFeatureId: string) {
+    return this.prisma.planFeature.delete({ where: { id: planFeatureId } });
+  }
+
+  @Post('plan-features/:planFeatureId/tiers')
+  async upsertTiers(
+    @Param('planFeatureId') planFeatureId: string,
+    @Body() body: { tiers: { fromUnit: number; toUnit?: number | null; unitPriceMinor: number; flatFeeMinor?: number; currency: string }[] },
+  ) {
+    await this.prisma.meteringTier.deleteMany({ where: { planFeatureId } });
+    const created = await Promise.all(
+      body.tiers.map((t) =>
+        this.prisma.meteringTier.create({
+          data: {
+            planFeatureId,
+            fromUnit: t.fromUnit,
+            toUnit: t.toUnit ?? null,
+            unitPriceMinor: t.unitPriceMinor,
+            flatFeeMinor: t.flatFeeMinor ?? 0,
+            currency: t.currency,
+          },
+        }),
+      ),
+    );
+    return created;
+  }
+
+  @Delete('plan-features/:planFeatureId/tiers/:tierId')
+  deleteTier(@Param('tierId') tierId: string) {
+    return this.prisma.meteringTier.delete({ where: { id: tierId } });
   }
 
   @Get('tenants/:tenantId/users')

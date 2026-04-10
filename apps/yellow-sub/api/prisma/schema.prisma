@@ -38,6 +38,22 @@ enum QuotaPeriod {
   BILLING_PERIOD
 }
 
+enum FeatureType {
+  BOOLEAN
+  LIMIT
+  CONFIG
+}
+
+enum ConfigType {
+  INTEGER
+  ENUM
+}
+
+enum TierMode {
+  GRADUATED
+  VOLUME
+}
+
 enum RegionScopeType {
   GLOBAL
   COUNTRY
@@ -198,7 +214,6 @@ model Plan {
   productFamily ProductFamily @relation(fields: [productFamilyId], references: [id], onDelete: Cascade)
   prices        PlanPrice[]
   features      PlanFeature[]
-  quotas        PlanQuota[]
   tags          PlanTag[]
   subscriptions Subscription[]
 
@@ -237,14 +252,18 @@ model PlanPrice {
 }
 
 model Feature {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   tenantId    String
   key         String
   name        String
   description String?
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  type        FeatureType @default(BOOLEAN)
+  unitLabel   String?
+  configType  ConfigType?
+  configOptions Json?
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
   tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   planFeatures PlanFeature[]
@@ -253,35 +272,40 @@ model Feature {
 }
 
 model PlanFeature {
-  id        String   @id @default(cuid())
-  planId    String
-  featureId String
-  enabled   Boolean  @default(true)
-  metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String       @id @default(cuid())
+  planId         String
+  featureId      String
+  includedAmount Int?
+  softLimit      Int?
+  hardLimit      Int?
+  limitPeriod    QuotaPeriod?
+  tierMode       TierMode?
+  configValue    String?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
   plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
   feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  tiers   MeteringTier[]
 
   @@unique([planId, featureId])
 }
 
-model PlanQuota {
-  id         String      @id @default(cuid())
-  planId     String
-  key        String
-  name       String
-  limitValue Int
-  period     QuotaPeriod @default(BILLING_PERIOD)
-  rollover   Boolean     @default(false)
-  metadata   Json?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+model MeteringTier {
+  id             String   @id @default(cuid())
+  planFeatureId  String
+  fromUnit       Int
+  toUnit         Int?
+  unitPriceMinor Int
+  flatFeeMinor   Int      @default(0)
+  currency       String   @db.VarChar(3)
+  createdAt      DateTime @default(now())
 
-  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  planFeature PlanFeature @relation(fields: [planFeatureId], references: [id], onDelete: Cascade)
 
-  @@unique([planId, key])
+  @@unique([planFeatureId, fromUnit])
+  @@index([planFeatureId])
 }
 
 model PlanTag {
