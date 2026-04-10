@@ -37,6 +37,12 @@ Central config is loaded from environment variables (see `api/.env.example`).
 
 OpenAPI: `http://localhost:4000/api/docs`
 
+### Debugging admin (Firebase) sign-in
+
+- **Google sign-in runs entirely in the browser** until you load data. The API does **not** log `AdminFirebaseGuard` until a request hits `/api/v1/admin/*` with a Bearer token.
+- **Browser:** open DevTools → Console and filter for **`[YellowSub auth]`** (redirect result, `onAuthStateChanged`, errors).
+- **Server:** `GET https://<your-host>/auth/debug` returns whether `firebaseProjectId` is set for the `/__/auth/handler` → `*.firebaseapp.com` redirect. If Google sends users to `https://your-domain/__/auth/handler`, watch logs for `OAuth return hit this server` and `redirect 302 to Firebase auth handler`.
+
 ## Integration API
 
 All public routes require header `X-Api-Key` for the tenant. Create keys via admin API (`POST /api/v1/admin/tenants/:tenantId/api-keys`).
