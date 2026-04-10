@@ -30,6 +30,7 @@ type AuthState = {
 };
 
 const Ctx = createContext<AuthState | null>(null);
+const REDIRECT_PENDING_KEY = 'ys_auth_redirect_pending';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -40,7 +41,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsub: (() => void) | undefined;
     let cancelled = false;
     void (async () => {
-      console.info('[YellowSub auth] initializing (Firebase runs in browser; API logs only when you call /api/v1/admin/*)');
+      const pendingReturn =
+        typeof window !== 'undefined' &&
+        sessionStorage.getItem(REDIRECT_PENDING_KEY) === '1';
+      if (pendingReturn) {
+        sessionStorage.removeItem(REDIRECT_PENDING_KEY);
+      }
+      const urlLooksLikeHandler =
+        typeof window !== 'undefined' &&
+        (window.location.hash.includes('apiKey=') ||
+          window.location.search.includes('apiKey=') ||
+          /\/__\/auth\/handler/.test(window.location.href));
+      const fromOAuth = pendingReturn || urlLooksLikeHandler;
+      console.info(
+        '[YellowSub auth] initializing',
+        fromOAuth
+          ? '(returning after Sign in with Google — getRedirectResult should complete)'
+          : '(fresh load)',
+      );
       try {
         await setPersistence(auth, browserLocalPersistence);
       } catch {
@@ -69,6 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       await auth.authStateReady();
       if (cancelled) return;
+      if (fromOAuth && !auth.currentUser) {
+        console.warn(
+          '[YellowSub auth] returned from Google but still no user. Check: (1) GET /auth/debug has firebaseProjectId (2) server logs show redirect /__/auth/handler (3) Firebase Console → Auth → Users (4) OAuth redirect URIs include *.firebaseapp.com/__/auth/handler',
+        );
+      }
       unsub = onAuthStateChanged(auth, (u) => {
         if (u) {
           console.info('[YellowSub auth] signed in', u.email ?? u.uid);
@@ -88,6 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   /** Redirect flow avoids popup issues (third-party cookies, COOP, blockers). */
   const signInWithGoogle = useCallback(async () => {
+    sessionStorage.setItem(REDIRECT_PENDING_KEY, '1');
+    console.info(
+      '[YellowSub auth] starting Google redirect; after Google you should land on same origin:',
+      window.location.origin,
+    );
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     await signInWithRedirect(auth, provider);
