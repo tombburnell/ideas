@@ -10,6 +10,8 @@ export type AppConfiguration = {
   adminEmailAllowlist: string[];
   disableWorkers: boolean;
   adminStaticPath: string | null;
+  /** Log each HTTP request (method, path, status, duration). */
+  logHttp: boolean;
 };
 
 function parseBool(v: string | undefined, defaultVal: boolean): boolean {
@@ -37,4 +39,5 @@ export default (): AppConfiguration => ({
   adminEmailAllowlist: parseAdminEmails(process.env.ADMIN_EMAIL_ALLOWLIST),
   disableWorkers: parseBool(process.env.DISABLE_WORKERS, false),
   adminStaticPath: process.env.ADMIN_DIST_PATH ?? null,
+  logHttp: parseBool(process.env.LOG_HTTP, true),
 });

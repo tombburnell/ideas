@@ -25,6 +25,7 @@ Central config is loaded from environment variables (see `api/.env.example`).
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Service account JSON string for Firebase Admin |
 | `ADMIN_DIST_PATH` | Relative path from `api/` cwd to admin `dist` (Docker: `../admin-web/dist`) |
 | `DISABLE_WORKERS` | Set `true` to skip BullMQ registration |
+| `LOG_HTTP` | Log each HTTP request (method, path, status, duration); default `true` |
 
 ## Local development
 
