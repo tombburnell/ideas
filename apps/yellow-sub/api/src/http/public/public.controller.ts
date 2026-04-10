@@ -110,13 +110,12 @@ export class PublicController {
   ) {
     let manageUrl: string | null = null;
     try {
-      const m = await this.subs.getManagementUrl(
+      manageUrl = (await this.subs.getManagementUrl(
         this.tenantId(req),
         externalUserId,
-      );
-      manageUrl = m.url;
+      )).url;
     } catch {
-      manageUrl = null;
+      /* billing portal unavailable — proceed without manage link */
     }
     return this.entitlements.resolveForExternalUser(
       this.tenantId(req),

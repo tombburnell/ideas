@@ -1,7 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { BillingProvider } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingProviderRegistry } from '../providers/billing/billing-provider.registry';
 
