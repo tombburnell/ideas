@@ -1,7 +1,8 @@
 import {
   GoogleAuthProvider,
+  getRedirectResult,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
   type User,
 } from 'firebase/auth';
@@ -31,15 +32,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    void getRedirectResult(auth).catch(() => {
+      /* no redirect in progress or already consumed */
+    });
     return onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
     });
   }, []);
 
+  /** Redirect flow avoids popup issues (third-party cookies, COOP, blockers). */
   const signInWithGoogle = useCallback(async () => {
     const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    provider.setCustomParameters({ prompt: 'select_account' });
+    await signInWithRedirect(auth, provider);
   }, []);
 
   const signOutUser = useCallback(async () => {
