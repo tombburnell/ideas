@@ -12,6 +12,12 @@ export type AppConfiguration = {
   adminStaticPath: string | null;
   /** Log each HTTP request (method, path, status, duration). */
   logHttp: boolean;
+  /** Same web API key as VITE_FIREBASE_API_KEY — used for GET /__/firebase/init.json when not using Firebase Hosting */
+  firebaseWebApiKey: string;
+  /** Optional full Firebase web config JSON (overrides auto-built init.json). */
+  firebaseWebConfigJson: string | null;
+  /** authDomain for /__/firebase/init.json — default: hostname of PUBLIC_BASE_URL */
+  firebaseAuthDomain: string;
 };
 
 function parseBool(v: string | undefined, defaultVal: boolean): boolean {
@@ -27,6 +33,14 @@ function parseAdminEmails(v: string | undefined): string[] {
     .filter(Boolean);
 }
 
+function hostnameFromPublicUrl(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return '';
+  }
+}
+
 function resolveFirebaseProjectId(): string {
   const fromEnv = process.env.FIREBASE_PROJECT_ID?.trim();
   if (fromEnv) return fromEnv;
@@ -40,10 +54,17 @@ function resolveFirebaseProjectId(): string {
   }
 }
 
-export default (): AppConfiguration => ({
+export default (): AppConfiguration => {
+  const publicBaseUrl = (process.env.PUBLIC_BASE_URL ?? 'http://localhost:4000').replace(
+    /\/$/,
+    '',
+  );
+  const firebaseAuthDomain =
+    process.env.FIREBASE_AUTH_DOMAIN?.trim() || hostnameFromPublicUrl(publicBaseUrl);
+  return {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parseInt(process.env.PORT ?? '4000', 10),
-  publicBaseUrl: (process.env.PUBLIC_BASE_URL ?? 'http://localhost:4000').replace(/\/$/, ''),
+  publicBaseUrl,
   databaseUrl: process.env.DATABASE_URL ?? '',
   redisUrl: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379',
   credentialsEncryptionKeyHex: process.env.CREDENTIALS_ENCRYPTION_KEY ?? '',
@@ -53,4 +74,8 @@ export default (): AppConfiguration => ({
   disableWorkers: parseBool(process.env.DISABLE_WORKERS, false),
   adminStaticPath: process.env.ADMIN_DIST_PATH ?? null,
   logHttp: parseBool(process.env.LOG_HTTP, true),
-});
+  firebaseWebApiKey: process.env.FIREBASE_WEB_API_KEY?.trim() ?? '',
+  firebaseWebConfigJson: process.env.FIREBASE_WEB_CONFIG_JSON?.trim() ?? null,
+  firebaseAuthDomain,
+  };
+};

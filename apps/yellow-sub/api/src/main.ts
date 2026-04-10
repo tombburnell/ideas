@@ -25,11 +25,52 @@ async function bootstrap() {
 
   /** Public: confirms OAuth redirect config (Firebase sign-in itself is browser-only until /api/v1/admin/*). */
   expressApp.get('/auth/debug', (_req: Request, res: Response) => {
+    const webKey = appConfig.get('firebaseWebApiKey', { infer: true });
+    const authDom = appConfig.get('firebaseAuthDomain', { infer: true });
     res.json({
       firebaseProjectId: firebaseProjectId || null,
       oauthHandlerRedirectConfigured: Boolean(firebaseProjectId),
+      firebaseInitJsonReady: Boolean(webKey && firebaseProjectId && authDom),
+      authDomainForInitJson: authDom || null,
       hint:
-        'If Google returns to https://your-domain/__/auth/handler, this server must redirect to *.firebaseapp.com (needs firebaseProjectId). Browser Firebase logs are in DevTools console [YellowSub auth].',
+        'Use authDomain = your public host (yellowsub.vibedust.com) and set FIREBASE_WEB_API_KEY same as VITE_FIREBASE_API_KEY so GET /__/firebase/init.json works without Firebase Hosting. Domain must be *.firebaseapp.com not *.firebase.com.',
+    });
+  });
+
+  /**
+   * Firebase Hosting serves this for SDK helpers; without Hosting the SDK may 404 here and break auth.
+   * Set FIREBASE_WEB_API_KEY (same as VITE_FIREBASE_API_KEY) and PUBLIC_BASE_URL (or FIREBASE_AUTH_DOMAIN).
+   */
+  expressApp.get('/__/firebase/init.json', (_req: Request, res: Response) => {
+    const raw = appConfig.get('firebaseWebConfigJson', { infer: true });
+    if (raw) {
+      try {
+        JSON.parse(raw);
+        res.type('application/json').send(raw);
+        return;
+      } catch {
+        logger.warn('FIREBASE_WEB_CONFIG_JSON is invalid JSON');
+      }
+    }
+    const apiKey = appConfig.get('firebaseWebApiKey', { infer: true });
+    const pid = appConfig.get('firebaseProjectId', { infer: true }).trim();
+    const authDomain = appConfig.get('firebaseAuthDomain', { infer: true }).trim();
+    if (!apiKey || !pid || !authDomain) {
+      logger.warn(
+        'GET /__/firebase/init.json 503 — set FIREBASE_WEB_API_KEY and PUBLIC_BASE_URL (or FIREBASE_AUTH_DOMAIN)',
+      );
+      res.status(503).type('application/json').send(
+        JSON.stringify({
+          error:
+            'Server missing FIREBASE_WEB_API_KEY (same as VITE_FIREBASE_API_KEY) or project/domain for init.json',
+        }),
+      );
+      return;
+    }
+    res.type('application/json').json({
+      apiKey,
+      authDomain,
+      projectId: pid,
     });
   });
 

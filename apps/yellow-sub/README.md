@@ -22,6 +22,8 @@ Central config is loaded from environment variables (see `api/.env.example`).
 | `PUBLIC_BASE_URL` | Public URL for redirects and docs |
 | `ADMIN_EMAIL_ALLOWLIST` | Comma-separated emails allowed for admin API (Firebase) |
 | `FIREBASE_PROJECT_ID` | Firebase project (also used to redirect `/__/auth/handler` if OAuth hits your custom domain) |
+| `FIREBASE_WEB_API_KEY` | Same value as `VITE_FIREBASE_API_KEY` — serves `GET /__/firebase/init.json` (Firebase Hosting URL) when not using Firebase Hosting |
+| `PUBLIC_BASE_URL` / `FIREBASE_AUTH_DOMAIN` | Used to build `authDomain` in that `init.json` — use your real public host (e.g. `https://yellowsub.vibedust.com`) |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Service account JSON string for Firebase Admin |
 | `ADMIN_DIST_PATH` | Relative path from `api/` cwd to admin `dist` (Docker: `../admin-web/dist`) |
 | `DISABLE_WORKERS` | Set `true` to skip BullMQ registration |
@@ -36,6 +38,14 @@ Central config is loaded from environment variables (see `api/.env.example`).
 5. Admin (optional): `npm run dev -w @yellow-sub/admin-web` — configure `admin-web/.env` from `.env.example`.
 
 OpenAPI: `http://localhost:4000/api/docs`
+
+### Production Firebase + custom domain (Coolify, not Firebase Hosting)
+
+1. Set **`PUBLIC_BASE_URL=https://yellowsub.vibedust.com`** (no trailing slash).
+2. Set **`FIREBASE_WEB_API_KEY`** to the **same** string as **`VITE_FIREBASE_API_KEY`** (web API key from Firebase Console).
+3. Admin build: set **`VITE_PUBLIC_ORIGIN=https://yellowsub.vibedust.com`** so **`authDomain`** is `yellowsub.vibedust.com` (must match `init.json`).
+4. Add **`yellowsub.vibedust.com`** under Firebase **Authentication → Authorized domains** (already done).
+5. **Spelling:** host must be **`*.firebaseapp.com`**, never **`firebase.com`** (wrong domain).
 
 ### Debugging admin (Firebase) sign-in
 
