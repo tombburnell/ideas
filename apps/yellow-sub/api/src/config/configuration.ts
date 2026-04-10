@@ -27,6 +27,19 @@ function parseAdminEmails(v: string | undefined): string[] {
     .filter(Boolean);
 }
 
+function resolveFirebaseProjectId(): string {
+  const fromEnv = process.env.FIREBASE_PROJECT_ID?.trim();
+  if (fromEnv) return fromEnv;
+  const json = process.env.FIREBASE_SERVICE_ACCOUNT_JSON?.trim();
+  if (!json) return '';
+  try {
+    const o = JSON.parse(json) as { project_id?: string };
+    return o.project_id?.trim() ?? '';
+  } catch {
+    return '';
+  }
+}
+
 export default (): AppConfiguration => ({
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: parseInt(process.env.PORT ?? '4000', 10),
@@ -34,7 +47,7 @@ export default (): AppConfiguration => ({
   databaseUrl: process.env.DATABASE_URL ?? '',
   redisUrl: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379',
   credentialsEncryptionKeyHex: process.env.CREDENTIALS_ENCRYPTION_KEY ?? '',
-  firebaseProjectId: process.env.FIREBASE_PROJECT_ID ?? '',
+  firebaseProjectId: resolveFirebaseProjectId(),
   firebaseServiceAccountJson: process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? null,
   adminEmailAllowlist: parseAdminEmails(process.env.ADMIN_EMAIL_ALLOWLIST),
   disableWorkers: parseBool(process.env.DISABLE_WORKERS, false),

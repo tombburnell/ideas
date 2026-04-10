@@ -1,7 +1,9 @@
 import {
+  browserLocalPersistence,
   GoogleAuthProvider,
   getRedirectResult,
   onAuthStateChanged,
+  setPersistence,
   signInWithRedirect,
   signOut,
   type User,
@@ -38,16 +40,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsub: (() => void) | undefined;
     let cancelled = false;
     void (async () => {
-      await auth.authStateReady();
-      if (cancelled) return;
       try {
-        await getRedirectResult(auth);
+        await setPersistence(auth, browserLocalPersistence);
+      } catch {
+        /* non-fatal */
+      }
+      // Process OAuth redirect before authStateReady so session is not missed (redirect flow).
+      try {
+        const cred = await getRedirectResult(auth);
+        if (cred?.user && !cancelled) {
+          console.info('[auth] redirect sign-in ok', cred.user.uid);
+        }
       } catch (e: unknown) {
         const code =
           e && typeof e === 'object' && 'code' in e
             ? String((e as { code?: string }).code)
             : '';
-        // auth/no-auth-event = normal when user did not just return from redirect
         if (code && code !== 'auth/no-auth-event') {
           const msg = e instanceof Error ? e.message : String(e);
           console.error('[auth] getRedirectResult failed:', code, msg);
@@ -56,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           );
         }
       }
+      await auth.authStateReady();
       if (cancelled) return;
       unsub = onAuthStateChanged(auth, (u) => {
         setUser(u);

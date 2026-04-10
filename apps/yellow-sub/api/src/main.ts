@@ -15,26 +15,26 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+  const appConfig = app.get(ConfigService<AppConfiguration, true>);
   const expressApp = app.getHttpAdapter().getInstance() as express.Application;
-  // If VITE_FIREBASE_AUTH_DOMAIN was set to a custom host, Google redirects to
-  // https://custom/__/auth/handler — which hits this app and 404s. Firebase only
-  // serves /__/auth/handler on *.firebaseapp.com; forward the query string there.
+  const firebaseProjectId = appConfig.get('firebaseProjectId', { infer: true }).trim();
+  // If OAuth returns to https://custom/__/auth/handler, forward to Firebase's handler.
   expressApp.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.method !== 'GET' || req.path !== '/__/auth/handler') {
+    const pathname = (req.originalUrl ?? req.url ?? '').split('?')[0];
+    if (req.method !== 'GET' || pathname !== '/__/auth/handler') {
       return next();
     }
-    const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
-    if (!projectId) {
-      logger.warn('GET /__/auth/handler but FIREBASE_PROJECT_ID unset; cannot redirect to Firebase handler');
+    if (!firebaseProjectId) {
+      logger.warn(
+        'GET /__/auth/handler but firebaseProjectId empty — set FIREBASE_PROJECT_ID in Coolify',
+      );
       return next();
     }
     const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
-    const target = `https://${projectId}.firebaseapp.com/__/auth/handler${qs}`;
-    logger.log(`redirecting OAuth completion to Firebase handler (custom authDomain fix)`);
+    const target = `https://${firebaseProjectId}.firebaseapp.com/__/auth/handler${qs}`;
+    logger.log(`redirect /__/auth/handler -> firebaseapp (${firebaseProjectId})`);
     return res.redirect(302, target);
   });
-
-  const appConfig = app.get(ConfigService<AppConfiguration, true>);
   if (appConfig.get('logHttp', { infer: true })) {
     app.use(httpLoggingMiddleware);
   }
@@ -77,7 +77,7 @@ async function bootstrap() {
       appConfig.get('firebaseServiceAccountJson', { infer: true }),
   );
   logger.log(
-    `listening on 0.0.0.0:${port} publicBaseUrl=${publicBaseUrl} adminStatic=${adminStatic ? 'yes' : 'no'} firebaseAdmin=${firebaseConfigured ? 'yes' : 'no'} logHttp=${appConfig.get('logHttp', { infer: true })}`,
+    `listening on 0.0.0.0:${port} publicBaseUrl=${publicBaseUrl} adminStatic=${adminStatic ? 'yes' : 'no'} firebaseAdmin=${firebaseConfigured ? 'yes' : 'no'} oauthRedirectProjectId=${firebaseProjectId || 'MISSING'} logHttp=${appConfig.get('logHttp', { infer: true })}`,
   );
   await app.listen(port, '0.0.0.0');
 }
