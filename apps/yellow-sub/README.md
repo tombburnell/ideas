@@ -21,7 +21,7 @@ Central config is loaded from environment variables (see `api/.env.example`).
 | `CREDENTIALS_ENCRYPTION_KEY` | 64 hex chars (32 bytes) — encrypts provider `credentialsEncrypted` / webhook secrets |
 | `PUBLIC_BASE_URL` | Public URL for redirects and docs |
 | `ADMIN_EMAIL_ALLOWLIST` | Comma-separated emails allowed for admin API (Firebase) |
-| `FIREBASE_PROJECT_ID` | Firebase project |
+| `FIREBASE_PROJECT_ID` | Firebase project (also used to redirect `/__/auth/handler` if OAuth hits your custom domain) |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Service account JSON string for Firebase Admin |
 | `ADMIN_DIST_PATH` | Relative path from `api/` cwd to admin `dist` (Docker: `../admin-web/dist`) |
 | `DISABLE_WORKERS` | Set `true` to skip BullMQ registration |

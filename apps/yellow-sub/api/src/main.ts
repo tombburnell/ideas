@@ -5,7 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { join } from 'node:path';
-import express, { type Request, type Response } from 'express';
+import express, { type NextFunction, type Request, type Response } from 'express';
 import { AppModule } from './app.module';
 import type { AppConfiguration } from './config/configuration';
 import { httpLoggingMiddleware } from './common/logging/http-logging.middleware';
@@ -15,6 +15,25 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
+  const expressApp = app.getHttpAdapter().getInstance() as express.Application;
+  // If VITE_FIREBASE_AUTH_DOMAIN was set to a custom host, Google redirects to
+  // https://custom/__/auth/handler — which hits this app and 404s. Firebase only
+  // serves /__/auth/handler on *.firebaseapp.com; forward the query string there.
+  expressApp.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.method !== 'GET' || req.path !== '/__/auth/handler') {
+      return next();
+    }
+    const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
+    if (!projectId) {
+      logger.warn('GET /__/auth/handler but FIREBASE_PROJECT_ID unset; cannot redirect to Firebase handler');
+      return next();
+    }
+    const qs = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    const target = `https://${projectId}.firebaseapp.com/__/auth/handler${qs}`;
+    logger.log(`redirecting OAuth completion to Firebase handler (custom authDomain fix)`);
+    return res.redirect(302, target);
+  });
+
   const appConfig = app.get(ConfigService<AppConfiguration, true>);
   if (appConfig.get('logHttp', { infer: true })) {
     app.use(httpLoggingMiddleware);
@@ -31,7 +50,6 @@ async function bootstrap() {
   const adminDist = process.env.ADMIN_DIST_PATH;
   if (adminDist) {
     const root = join(process.cwd(), adminDist);
-    const expressApp = app.getHttpAdapter().getInstance() as express.Application;
     expressApp.use('/admin', express.static(root));
     expressApp.get('/admin', (_req: Request, res: Response) => {
       res.sendFile(join(root, 'index.html'));
