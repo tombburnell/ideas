@@ -23,7 +23,7 @@ import { Select } from '../components/ui/select';
 import { Badge, PlanStatusBadge } from '../components/ui/badge';
 import { useToast } from '../components/ui/toast';
 import { CURRENCIES, formatMinorUnits } from '../lib/currency';
-import type { Feature, PlanFeature, PlanPrice, MeteringTier } from '../lib/types';
+import type { PlanFeature, PlanPrice, MeteringTier } from '../lib/types';
 
 export function PlanDetailPage() {
   const { id: customerId, tenantId, planId } = useParams<{
