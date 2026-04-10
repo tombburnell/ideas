@@ -61,15 +61,20 @@ async function bootstrap() {
     const pid = appConfig.get('firebaseProjectId', { infer: true }).trim();
     const authDomain = appConfig.get('firebaseAuthDomain', { infer: true }).trim();
     if (!apiKey || !pid || !authDomain) {
-      logger.warn(
-        'GET /__/firebase/init.json 503 — set FIREBASE_WEB_API_KEY and PUBLIC_BASE_URL (or FIREBASE_AUTH_DOMAIN)',
-      );
-      res.status(503).type('application/json').send(
-        JSON.stringify({
-          error:
-            'Server missing FIREBASE_WEB_API_KEY (same as VITE_FIREBASE_API_KEY) or project/domain for init.json',
-        }),
-      );
+      const missing: string[] = [];
+      if (!apiKey) missing.push('FIREBASE_WEB_API_KEY');
+      if (!pid) missing.push('FIREBASE_PROJECT_ID (or project_id in FIREBASE_SERVICE_ACCOUNT_JSON)');
+      if (!authDomain) missing.push('PUBLIC_BASE_URL (e.g. https://yellowsub.vibedust.com) or FIREBASE_AUTH_DOMAIN');
+      logger.warn(`GET /__/firebase/init.json 503 missing: ${missing.join(', ')}`);
+      res.status(503).type('application/json').json({
+        error: 'init.json requires API runtime env vars on this server (Coolify → application → Environment)',
+        missing,
+        fix: {
+          FIREBASE_WEB_API_KEY: 'Same string as VITE_FIREBASE_API_KEY from Firebase Console web app',
+          FIREBASE_PROJECT_ID: 'e.g. yellowsub-fbb1c',
+          PUBLIC_BASE_URL: 'https://yellowsub.vibedust.com (no trailing slash) so authDomain resolves',
+        },
+      });
       return;
     }
     res.type('application/json').json({
