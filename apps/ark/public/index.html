@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ark — Pop Art Arkanoid</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="pop-shell">
+      <header class="header">
+        <h1>ARK</h1>
+        <p class="tagline">Pop art breakout</p>
+        <button type="button" class="scores-open-btn" id="openScoresBtn">High scores</button>
+      </header>
+      <main class="layout">
+        <section class="panel game-panel">
+          <div class="hud">
+            <span id="score">SCORE 0000</span>
+            <span id="lives" aria-label="Lives">●●●</span>
+            <span id="status" class="blink">READY</span>
+          </div>
+          <div class="canvas-wrap" id="canvasWrap">
+            <canvas id="game" width="400" height="500" aria-label="Arkanoid game"></canvas>
+            <div class="board-overlay" id="boardOverlay" aria-hidden="false">
+              <button type="button" class="overlay-btn" id="overlayActionBtn">Start</button>
+            </div>
+          </div>
+          <div class="touch-lr-row" id="touchPadLr" aria-label="Move paddle left or right">
+            <button type="button" class="touch-btn touch-btn-lr" data-dir="left" aria-label="Move paddle left">←</button>
+            <button type="button" class="touch-btn touch-btn-lr" data-dir="right" aria-label="Move paddle right">→</button>
+          </div>
+          <div class="help-shell">
+            <button
+              type="button"
+              class="help-toggle"
+              id="helpToggle"
+              aria-expanded="false"
+              aria-controls="helpBody"
+            >
+              Help
+            </button>
+            <div class="help-body" id="helpBody" aria-hidden="true">
+              <div class="controls" aria-label="How to play">
+                <h3 class="controls-title">CONTROLS</h3>
+                <ul class="controls-list">
+                  <li><span class="key">←</span><span class="key">→</span> Move paddle</li>
+                  <li><span class="key">P</span> Pause / resume</li>
+                  <li><span class="key">R</span> Restart</li>
+                  <li><span class="key">Space</span> when overlay shows — start / resume / try again</li>
+                  <li>Touch: arrows below, or drag on the board to steer</li>
+                  <li>Clear every brick to level up; don’t drop the ball</li>
+                  <li>After game over: enter name → <span class="key">SUBMIT</span> (opens high scores)</li>
+                </ul>
+              </div>
+              <div class="touch-secondary" id="touchPadSecondary" aria-label="Pause and restart">
+                <div class="touch-row touch-row-extras">
+                  <button type="button" class="touch-btn touch-btn-small" id="touchPause" aria-label="Pause or resume">
+                    ‖
+                  </button>
+                  <button type="button" class="touch-btn touch-btn-small" id="touchRestart" aria-label="Restart game">
+                    ↺
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="name-row hidden" id="nameRow" aria-live="polite">
+            <label for="playerName">NAME</label>
+            <input
+              id="playerName"
+              type="text"
+              maxlength="32"
+              placeholder="POP"
+              autocomplete="off"
+            />
+            <button type="button" id="submitScore" disabled>SUBMIT</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal" id="scoresModal" role="dialog" aria-modal="true" aria-labelledby="scoresModalTitle" hidden>
+      <button type="button" class="modal-backdrop" id="scoresModalBackdrop" tabindex="-1" aria-label="Close high scores"></button>
+      <div class="modal-panel">
+        <div class="modal-header">
+          <h2 id="scoresModalTitle" class="modal-title">High scores</h2>
+          <button type="button" class="modal-close" id="scoresModalClose" aria-label="Close">×</button>
+        </div>
+        <ol id="leaderboard" class="leaderboard modal-leaderboard"></ol>
+        <p id="scoresError" class="error hidden"></p>
+      </div>
+    </div>
+
+    <script src="/game.js" type="module"></script>
+  </body>
+</html>
