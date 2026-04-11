@@ -8,6 +8,7 @@ import { Dialog } from '../components/ui/dialog';
 import { Input } from '../components/ui/input';
 import { StatusBadge } from '../components/ui/badge';
 import { useToast } from '../components/ui/toast';
+import { SlugField } from '../components/slug-field';
 import type { Customer } from '../lib/types';
 
 export function CustomersPage() {
@@ -62,13 +63,12 @@ export function CustomersPage() {
       <Dialog open={open} onClose={() => setOpen(false)} title="New Customer">
         <form onSubmit={handleCreate} className="space-y-4">
           <Input label="Name" value={name} onChange={(e) => setName(e.currentTarget.value)} required autoFocus />
-          <Input
+          <SlugField
             label="Slug"
+            title={name}
             value={slug}
-            onChange={(e) => setSlug(e.currentTarget.value)}
-            required
-            pattern="[a-z0-9-]+"
-            placeholder="my-company"
+            onChange={setSlug}
+            takenValues={(customers.data ?? []).map((c) => c.slug)}
           />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>

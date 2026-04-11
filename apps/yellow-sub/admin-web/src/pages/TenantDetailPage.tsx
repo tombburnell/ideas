@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Plus, Copy, Search, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import {
   useCustomers,
@@ -23,6 +23,7 @@ import {
   useSubscriptions,
   useResyncSubscription,
   useEvents,
+  usePlansWithDetails,
 } from '../hooks/use-admin';
 import { Breadcrumb } from '../components/ui/breadcrumb';
 import { Tabs } from '../components/ui/tabs';
@@ -33,6 +34,8 @@ import { Input, Textarea } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { Badge, StatusBadge, PlanStatusBadge, SubStatusBadge } from '../components/ui/badge';
 import { useToast } from '../components/ui/toast';
+import { SubscriptionMatrix } from '../components/subscription-matrix';
+import { KeyField } from '../components/key-field';
 import type {
   BillingProviderAccount,
   ExternalUser,
@@ -51,12 +54,21 @@ const TABS = [
   { id: 'api-keys', label: 'API Keys' },
   { id: 'subscribers', label: 'Subscribers' },
   { id: 'subscriptions', label: 'Subscriptions' },
+  { id: 'providers', label: 'Providers' },
   { id: 'events', label: 'Events' },
 ];
 
+const TAB_IDS = new Set(TABS.map((t) => t.id));
+
 export function TenantDetailPage() {
   const { id: customerId, tenantId } = useParams<{ id: string; tenantId: string }>();
-  const [tab, setTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') ?? 'overview';
+  const tab = TAB_IDS.has(tabFromUrl) ? tabFromUrl : 'overview';
+
+  const setTab = (id: string) => {
+    setSearchParams(id === 'overview' ? {} : { tab: id }, { replace: true });
+  };
 
   const customers = useCustomers();
   const customer = customers.data?.find((c) => c.id === customerId);
@@ -84,12 +96,13 @@ export function TenantDetailPage() {
         </div>
       </div>
       <Tabs tabs={TABS} active={tab} onChange={setTab}>
-        {tab === 'overview' && <OverviewTab tenantId={tenantId!} />}
+        {tab === 'overview' && <OverviewTab customerId={customerId!} tenantId={tenantId!} />}
         {tab === 'products' && <ProductsTab customerId={customerId!} tenantId={tenantId!} />}
         {tab === 'features' && <FeaturesTab tenantId={tenantId!} />}
         {tab === 'api-keys' && <ApiKeysTab tenantId={tenantId!} />}
         {tab === 'subscribers' && <SubscribersTab tenantId={tenantId!} />}
         {tab === 'subscriptions' && <SubscriptionsTab tenantId={tenantId!} />}
+        {tab === 'providers' && <ProvidersTab tenantId={tenantId!} />}
         {tab === 'events' && <EventsTab tenantId={tenantId!} />}
       </Tabs>
     </div>
@@ -98,7 +111,39 @@ export function TenantDetailPage() {
 
 // ── Overview Tab ──
 
-function OverviewTab({ tenantId }: { tenantId: string }) {
+function OverviewTab({ customerId, tenantId }: { customerId: string; tenantId: string }) {
+  const features = useFeatures(tenantId);
+  const { details: planDetails, isLoading } = usePlansWithDetails(tenantId);
+
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-sm font-medium text-zinc-300">Subscription comparison</h2>
+        <p className="mt-1 text-xs text-zinc-500">
+          Plans as columns, features as rows. Configure prices and provider links on each{' '}
+          <Link
+            to={`/customers/${customerId}/tenants/${tenantId}`}
+            className="text-emerald-400 hover:underline"
+          >
+            plan
+          </Link>
+          .
+        </p>
+      </div>
+      <SubscriptionMatrix
+        customerId={customerId}
+        tenantId={tenantId}
+        features={features.data ?? []}
+        plans={planDetails}
+        isLoading={features.isLoading || isLoading}
+      />
+    </section>
+  );
+}
+
+// ── Providers Tab ──
+
+function ProvidersTab({ tenantId }: { tenantId: string }) {
   const accounts = useProviderAccounts(tenantId);
   const createAccount = useCreateProviderAccount(tenantId);
   const { toast } = useToast();
@@ -356,7 +401,13 @@ function ProductsTab({ customerId, tenantId }: { customerId: string; tenantId: s
       <Dialog open={familyOpen} onClose={() => setFamilyOpen(false)} title="New Product Family">
         <form onSubmit={handleCreateFamily} className="space-y-4">
           <Input label="Name" value={fName} onChange={(e) => setFName(e.currentTarget.value)} required autoFocus />
-          <Input label="Key" value={fKey} onChange={(e) => setFKey(e.currentTarget.value)} required pattern="[a-z0-9_-]+" placeholder="my-product" />
+          <KeyField
+            label="Key"
+            title={fName}
+            value={fKey}
+            onChange={setFKey}
+            takenValues={(families.data ?? []).map((f) => f.key)}
+          />
           <Textarea label="Description" value={fDesc} onChange={(e) => setFDesc(e.currentTarget.value)} />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setFamilyOpen(false)}>Cancel</Button>
@@ -397,7 +448,13 @@ function ProductsTab({ customerId, tenantId }: { customerId: string; tenantId: s
             placeholder="Select family"
           />
           <Input label="Name" value={pName} onChange={(e) => setPName(e.currentTarget.value)} required />
-          <Input label="Key" value={pKey} onChange={(e) => setPKey(e.currentTarget.value)} required pattern="[a-z0-9_-]+" placeholder="pro-monthly" />
+          <KeyField
+            label="Key"
+            title={pName}
+            value={pKey}
+            onChange={setPKey}
+            takenValues={(plans.data ?? []).map((p) => p.key)}
+          />
           <Textarea label="Description" value={pDesc} onChange={(e) => setPDesc(e.currentTarget.value)} />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setPlanOpen(false)}>Cancel</Button>
@@ -549,7 +606,13 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
       <Dialog open={open} onClose={() => setOpen(false)} title="New Feature">
         <form onSubmit={handleCreate} className="space-y-4">
           <Input label="Name" value={name} onChange={(e) => setName(e.currentTarget.value)} required autoFocus />
-          <Input label="Key" value={key} onChange={(e) => setKey(e.currentTarget.value)} required pattern="[a-z0-9_-]+" placeholder="advanced-analytics" />
+          <KeyField
+            label="Key"
+            title={name}
+            value={key}
+            onChange={setKey}
+            takenValues={(features.data ?? []).map((f) => f.key)}
+          />
           <Select
             label="Type"
             value={type}

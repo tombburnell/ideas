@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import {
   useCustomers,
@@ -9,6 +9,7 @@ import {
   useFeatures,
   useProviderAccounts,
   useCreatePlanPrice,
+  useUpdatePlanPrice,
   useLinkPlanFeature,
   useUpdatePlanFeature,
   useUnlinkPlanFeature,
@@ -42,6 +43,7 @@ export function PlanDetailPage() {
   const features = useFeatures(tenantId!);
   const accounts = useProviderAccounts(tenantId!);
   const createPrice = useCreatePlanPrice(tenantId!, planId!);
+  const updatePrice = useUpdatePlanPrice(planId!);
   const linkFeature = useLinkPlanFeature(tenantId!, planId!);
   const updatePlanFeature = useUpdatePlanFeature(planId!);
   const unlinkPlanFeature = useUnlinkPlanFeature(planId!);
@@ -61,6 +63,16 @@ export function PlanDetailPage() {
   const [priceAmount, setPriceAmount] = useState('');
   const [priceInterval, setPriceInterval] = useState('month');
   const [priceName, setPriceName] = useState('');
+
+  const [editPriceRow, setEditPriceRow] = useState<PlanPrice | null>(null);
+  const [epAccountId, setEpAccountId] = useState('');
+  const [epProvider, setEpProvider] = useState('');
+  const [epExtId, setEpExtId] = useState('');
+  const [epVariantId, setEpVariantId] = useState('');
+  const [epCurrency, setEpCurrency] = useState('');
+  const [epAmount, setEpAmount] = useState('');
+  const [epInterval, setEpInterval] = useState('month');
+  const [epDisplayName, setEpDisplayName] = useState('');
 
   const [featureOpen, setFeatureOpen] = useState(false);
   const [featureId, setFeatureId] = useState('');
@@ -118,7 +130,45 @@ export function PlanDetailPage() {
 
   const openPriceDialog = () => {
     setPriceCurrency(tenant.defaultCurrency);
+    setPriceAccountId(accounts.data?.[0]?.id ?? '');
+    const first = accounts.data?.[0];
+    if (first) setPriceProvider(first.provider);
     setPriceOpen(true);
+  };
+
+  const openEditPrice = (row: PlanPrice) => {
+    setEditPriceRow(row);
+    setEpAccountId(row.providerAccountId);
+    setEpProvider(row.provider);
+    setEpExtId(row.externalPriceId);
+    setEpVariantId(row.externalVariantId ?? '');
+    setEpCurrency(row.currency);
+    setEpAmount(row.unitAmountMinor.toString());
+    setEpInterval(row.billingInterval);
+    setEpDisplayName(row.name ?? '');
+  };
+
+  const handleUpdatePrice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editPriceRow) return;
+    const account = accounts.data?.find((a) => a.id === epAccountId);
+    try {
+      await updatePrice.mutateAsync({
+        planPriceId: editPriceRow.id,
+        providerAccountId: epAccountId,
+        provider: epProvider || account?.provider,
+        externalPriceId: epExtId,
+        externalVariantId: epVariantId.trim() || null,
+        currency: epCurrency,
+        unitAmountMinor: parseInt(epAmount, 10),
+        billingInterval: epInterval,
+        name: epDisplayName.trim() || null,
+      });
+      toast('Price updated');
+      setEditPriceRow(null);
+    } catch (err) {
+      toast(String(err), 'error');
+    }
   };
 
   const handleCreatePrice = async (e: React.FormEvent) => {
@@ -290,6 +340,10 @@ export function PlanDetailPage() {
     ? formatMinorUnits(parseInt(priceAmount, 10) || 0, priceCurrency)
     : null;
 
+  const editPricePreview = epAmount && epCurrency
+    ? formatMinorUnits(parseInt(epAmount, 10) || 0, epCurrency)
+    : null;
+
   return (
     <div className="space-y-8">
       <Breadcrumb
@@ -318,14 +372,31 @@ export function PlanDetailPage() {
         </Button>
       </div>
 
-      {/* Prices */}
+      {/* Provider prices (linked to billing provider) */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-zinc-300">Prices</h2>
+          <div>
+            <h2 className="text-sm font-medium text-zinc-300">Provider prices</h2>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              Maps this plan to a price (and optional variant) in your payment provider for checkout and webhooks.
+            </p>
+          </div>
           <Button size="sm" variant="secondary" onClick={openPriceDialog} disabled={!accounts.data?.length}>
-            <Plus size={14} /> Add Price
+            <Plus size={14} /> Add price
           </Button>
         </div>
+        {!accounts.data?.length && (
+          <div className="mb-3 rounded-md border border-amber-600/40 bg-amber-950/20 px-3 py-2 text-xs text-amber-200/90">
+            No billing provider account configured.{' '}
+            <Link
+              to={`/customers/${customerId}/tenants/${tenantId}?tab=providers`}
+              className="font-medium text-emerald-400 underline-offset-2 hover:underline"
+            >
+              Add a provider
+            </Link>{' '}
+            before you can link prices.
+          </div>
+        )}
         <DataTable<PlanPrice>
           columns={[
             { key: 'name', header: 'Name', render: (r) => <span className="text-white">{r.name ?? '—'}</span> },
@@ -334,6 +405,16 @@ export function PlanDetailPage() {
             { key: 'provider', header: 'Provider', render: (r) => <Badge>{r.provider}</Badge> },
             { key: 'extId', header: 'External Price ID', render: (r) => <code className="text-xs text-zinc-500">{r.externalPriceId}</code> },
             { key: 'trial', header: 'Trial', render: (r) => r.trialDays ? `${r.trialDays}d` : '—' },
+            {
+              key: 'actions',
+              header: '',
+              render: (r) => (
+                <Button size="sm" variant="ghost" onClick={() => openEditPrice(r)}>
+                  <Pencil size={14} />
+                </Button>
+              ),
+              className: 'w-14',
+            },
           ]}
           data={p.prices}
           keyFn={(r) => r.id}
@@ -451,7 +532,7 @@ export function PlanDetailPage() {
       </Dialog>
 
       {/* Price Dialog */}
-      <Dialog open={priceOpen} onClose={() => setPriceOpen(false)} title="Add Price">
+      <Dialog open={priceOpen} onClose={() => setPriceOpen(false)} title="Add provider price">
         <form onSubmit={handleCreatePrice} className="space-y-4">
           <Select
             label="Provider Account"
@@ -467,7 +548,17 @@ export function PlanDetailPage() {
             required
           />
           <Input label="External Price ID" value={priceExtId} onChange={(e) => setPriceExtId(e.currentTarget.value)} required placeholder="price_123" />
-          <Input label="External Variant ID" value={priceVariantId} onChange={(e) => setPriceVariantId(e.currentTarget.value)} placeholder="variant_123 (optional)" />
+          <div>
+            <Input
+              label="External Variant ID"
+              value={priceVariantId}
+              onChange={(e) => setPriceVariantId(e.currentTarget.value)}
+              placeholder="e.g. Lemon Squeezy variant id (optional)"
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Used to match incoming subscription webhooks to this plan (e.g. Lemon Squeezy reports a variant id per line item).
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <Select label="Currency" value={priceCurrency} onChange={(e) => setPriceCurrency(e.currentTarget.value)} options={CURRENCIES} />
             <div>
@@ -490,6 +581,59 @@ export function PlanDetailPage() {
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setPriceOpen(false)}>Cancel</Button>
             <Button type="submit" size="sm" disabled={createPrice.isPending}>{createPrice.isPending ? 'Creating…' : 'Create'}</Button>
+          </div>
+        </form>
+      </Dialog>
+
+      <Dialog open={!!editPriceRow} onClose={() => setEditPriceRow(null)} title="Edit provider price" className="max-w-lg">
+        <form onSubmit={handleUpdatePrice} className="space-y-4">
+          <Select
+            label="Provider Account"
+            value={epAccountId}
+            onChange={(e) => {
+              const val = e.currentTarget.value;
+              setEpAccountId(val);
+              const acct = accounts.data?.find((a) => a.id === val);
+              if (acct) setEpProvider(acct.provider);
+            }}
+            options={(accounts.data ?? []).map((a) => ({ value: a.id, label: `${a.displayName} (${a.provider})` }))}
+            placeholder="Select account"
+            required
+          />
+          <Input label="External Price ID" value={epExtId} onChange={(e) => setEpExtId(e.currentTarget.value)} required placeholder="price_123" />
+          <div>
+            <Input
+              label="External Variant ID"
+              value={epVariantId}
+              onChange={(e) => setEpVariantId(e.currentTarget.value)}
+              placeholder="Optional — webhook matching"
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Provider-specific id for the purchasable variant; webhooks use it to find this plan price.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Select label="Currency" value={epCurrency} onChange={(e) => setEpCurrency(e.currentTarget.value)} options={CURRENCIES} />
+            <div>
+              <Input label="Amount (pennies/cents)" type="number" value={epAmount} onChange={(e) => setEpAmount(e.currentTarget.value)} required placeholder="999" min="0" />
+              {editPricePreview && <p className="mt-1 text-xs text-zinc-400">= <span className="font-mono text-emerald-400">{editPricePreview}</span></p>}
+            </div>
+          </div>
+          <Select
+            label="Billing Interval"
+            value={epInterval}
+            onChange={(e) => setEpInterval(e.currentTarget.value)}
+            options={[
+              { value: 'month', label: 'Monthly' },
+              { value: 'year', label: 'Yearly' },
+              { value: 'week', label: 'Weekly' },
+              { value: 'day', label: 'Daily' },
+            ]}
+          />
+          <Input label="Display Name (optional)" value={epDisplayName} onChange={(e) => setEpDisplayName(e.currentTarget.value)} placeholder="Pro Monthly" />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setEditPriceRow(null)}>Cancel</Button>
+            <Button type="submit" size="sm" disabled={updatePrice.isPending}>{updatePrice.isPending ? 'Saving…' : 'Save'}</Button>
           </div>
         </form>
       </Dialog>

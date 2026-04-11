@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../lib/auth-context';
 import { adminFetch } from '../lib/api';
 import type {
@@ -307,6 +307,52 @@ export function useCreatePlanPrice(tenantId: string, planId: string) {
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'plan', planId] }),
   });
+}
+
+export function useUpdatePlanPrice(planId: string) {
+  const getToken = useToken();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      planPriceId,
+      ...body
+    }: {
+      planPriceId: string;
+      providerAccountId?: string;
+      provider?: string;
+      externalPriceId?: string;
+      externalVariantId?: string | null;
+      currency?: string;
+      unitAmountMinor?: number;
+      billingInterval?: string;
+      name?: string | null;
+    }) =>
+      put(`/api/v1/admin/plan-prices/${planPriceId}`, await getToken(), body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'plan', planId] });
+      qc.invalidateQueries({ queryKey: ['admin', 'plans'] });
+    },
+  });
+}
+
+/** Loads full plan details (prices + linked features) for every plan in a tenant — for comparison matrix. */
+export function usePlansWithDetails(tenantId: string) {
+  const getToken = useToken();
+  const plans = usePlans(tenantId);
+  const planIds = plans.data?.map((p) => p.id) ?? [];
+  const details = useQueries({
+    queries: planIds.map((id) => ({
+      queryKey: ['admin', 'plan', id] as const,
+      queryFn: async () => get<PlanDetail>(`/api/v1/admin/plans/${id}`, await getToken()),
+      enabled: !!tenantId && planIds.length > 0,
+    })),
+  });
+  const loading =
+    plans.isLoading ||
+    (planIds.length > 0 && details.some((q) => q.isLoading || q.isFetching));
+  const list = details.map((q) => q.data).filter((x): x is PlanDetail => x != null);
+  const error = plans.error ?? details.find((q) => q.error)?.error;
+  return { plans, details: list, isLoading: loading, error };
 }
 
 // ── Features ──

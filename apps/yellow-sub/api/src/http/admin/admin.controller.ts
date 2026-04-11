@@ -270,7 +270,7 @@ export class AdminController {
       providerAccountId: string;
       provider: BillingProvider;
       externalPriceId: string;
-      externalVariantId: string;
+      externalVariantId?: string;
       currency: string;
       unitAmountMinor: number;
       billingInterval: string;
@@ -284,11 +284,41 @@ export class AdminController {
         providerAccountId: body.providerAccountId,
         provider: body.provider,
         externalPriceId: body.externalPriceId,
-        externalVariantId: body.externalVariantId,
+        externalVariantId: body.externalVariantId ?? undefined,
         currency: body.currency,
         unitAmountMinor: body.unitAmountMinor,
         billingInterval: body.billingInterval,
         name: body.name,
+      },
+    });
+  }
+
+  @Put('plan-prices/:planPriceId')
+  updatePlanPrice(
+    @Param('planPriceId') planPriceId: string,
+    @Body()
+    body: {
+      providerAccountId?: string;
+      provider?: BillingProvider;
+      externalPriceId?: string;
+      externalVariantId?: string | null;
+      currency?: string;
+      unitAmountMinor?: number;
+      billingInterval?: string;
+      name?: string | null;
+    },
+  ) {
+    return this.prisma.planPrice.update({
+      where: { id: planPriceId },
+      data: {
+        ...(body.providerAccountId !== undefined && { providerAccountId: body.providerAccountId }),
+        ...(body.provider !== undefined && { provider: body.provider }),
+        ...(body.externalPriceId !== undefined && { externalPriceId: body.externalPriceId }),
+        ...(body.externalVariantId !== undefined && { externalVariantId: body.externalVariantId }),
+        ...(body.currency !== undefined && { currency: body.currency }),
+        ...(body.unitAmountMinor !== undefined && { unitAmountMinor: body.unitAmountMinor }),
+        ...(body.billingInterval !== undefined && { billingInterval: body.billingInterval }),
+        ...(body.name !== undefined && { name: body.name }),
       },
     });
   }
