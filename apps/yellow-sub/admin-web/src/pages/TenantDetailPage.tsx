@@ -520,7 +520,7 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
   const [desc, setDesc] = useState('');
   const [type, setType] = useState<'BOOLEAN' | 'LIMIT' | 'CONFIG'>('BOOLEAN');
   const [unitLabel, setUnitLabel] = useState('');
-  const [configType, setConfigType] = useState<'INTEGER' | 'ENUM'>('INTEGER');
+  const [configType, setConfigType] = useState<'INTEGER' | 'ENUM' | 'MONEY'>('INTEGER');
   const [configOptions, setConfigOptions] = useState('');
 
   const [editFeature, setEditFeature] = useState<Feature | null>(null);
@@ -529,7 +529,7 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
   const [eActive, setEActive] = useState(true);
   const [eType, setEType] = useState<'BOOLEAN' | 'LIMIT' | 'CONFIG'>('BOOLEAN');
   const [eUnitLabel, setEUnitLabel] = useState('');
-  const [eConfigType, setEConfigType] = useState<'INTEGER' | 'ENUM'>('INTEGER');
+  const [eConfigType, setEConfigType] = useState<'INTEGER' | 'ENUM' | 'MONEY'>('INTEGER');
   const [eConfigOptions, setEConfigOptions] = useState('');
 
   const resetCreate = () => {
@@ -556,7 +556,9 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
         productFamilyId: createFamilyId,
         key, name, description: desc || undefined,
         type,
-        unitLabel: type === 'LIMIT' ? unitLabel || undefined : undefined,
+        unitLabel: type === 'LIMIT' || (type === 'CONFIG' && (configType === 'INTEGER' || configType === 'MONEY'))
+          ? unitLabel || undefined
+          : undefined,
         configType: type === 'CONFIG' ? configType : undefined,
         configOptions: type === 'CONFIG' && configType === 'ENUM'
           ? configOptions.split(',').map((s) => s.trim()).filter(Boolean)
@@ -591,7 +593,9 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
         description: eDesc || undefined,
         active: eActive,
         type: eType,
-        unitLabel: eType === 'LIMIT' ? eUnitLabel || undefined : undefined,
+        unitLabel: eType === 'LIMIT' || (eType === 'CONFIG' && (eConfigType === 'INTEGER' || eConfigType === 'MONEY'))
+          ? eUnitLabel || undefined
+          : undefined,
         configType: eType === 'CONFIG' ? eConfigType : undefined,
         configOptions: eType === 'CONFIG' && eConfigType === 'ENUM'
           ? eConfigOptions.split(',').map((s) => s.trim()).filter(Boolean)
@@ -616,7 +620,11 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
 
   const typeLabel = (f: Feature) => {
     if (f.type === 'LIMIT') return f.unitLabel ? `Limit (${f.unitLabel})` : 'Limit';
-    if (f.type === 'CONFIG') return f.configType === 'ENUM' ? 'Config (Enum)' : 'Config (Integer)';
+    if (f.type === 'CONFIG') {
+      if (f.configType === 'ENUM') return 'Config (Enum)';
+      if (f.configType === 'MONEY') return 'Config (Money)';
+      return 'Config (Integer)';
+    }
     return 'Boolean';
   };
 
@@ -733,12 +741,21 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
               <Select
                 label="Config Type"
                 value={configType}
-                onChange={(e) => setConfigType(e.currentTarget.value as 'INTEGER' | 'ENUM')}
+                onChange={(e) => setConfigType(e.currentTarget.value as 'INTEGER' | 'ENUM' | 'MONEY')}
                 options={[
                   { value: 'INTEGER', label: 'Integer' },
+                  { value: 'MONEY', label: 'Money (amount in a currency)' },
                   { value: 'ENUM', label: 'Enum (list of options)' },
                 ]}
               />
+              {(configType === 'INTEGER' || configType === 'MONEY') && (
+                <Input
+                  label="Unit Label (optional)"
+                  value={unitLabel}
+                  onChange={(e) => setUnitLabel(e.currentTarget.value)}
+                  placeholder={configType === 'MONEY' ? 'e.g. AI credits' : 'e.g. GB — shown after the number'}
+                />
+              )}
               {configType === 'ENUM' && (
                 <Input label="Options (comma-separated)" value={configOptions} onChange={(e) => setConfigOptions(e.currentTarget.value)} placeholder="email, chat, phone" />
               )}
@@ -786,12 +803,21 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
               <Select
                 label="Config Type"
                 value={eConfigType}
-                onChange={(e) => setEConfigType(e.currentTarget.value as 'INTEGER' | 'ENUM')}
+                onChange={(e) => setEConfigType(e.currentTarget.value as 'INTEGER' | 'ENUM' | 'MONEY')}
                 options={[
                   { value: 'INTEGER', label: 'Integer' },
+                  { value: 'MONEY', label: 'Money (amount in a currency)' },
                   { value: 'ENUM', label: 'Enum (list of options)' },
                 ]}
               />
+              {(eConfigType === 'INTEGER' || eConfigType === 'MONEY') && (
+                <Input
+                  label="Unit Label (optional)"
+                  value={eUnitLabel}
+                  onChange={(e) => setEUnitLabel(e.currentTarget.value)}
+                  placeholder={eConfigType === 'MONEY' ? 'e.g. AI credits' : 'e.g. GB — shown after the number'}
+                />
+              )}
               {eConfigType === 'ENUM' && (
                 <Input label="Options (comma-separated)" value={eConfigOptions} onChange={(e) => setEConfigOptions(e.currentTarget.value)} placeholder="email, chat, phone" />
               )}

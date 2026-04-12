@@ -438,7 +438,7 @@ export function useLinkPlanFeature(tenantId: string, planId: string) {
       hardLimit?: number;
       limitPeriod?: string;
       tierMode?: string;
-      configValue?: string;
+      configValue?: string | null;
     }) =>
       post<PlanFeature>(`/api/v1/admin/tenants/${tenantId}/plans/${planId}/plan-features`, await getToken(), body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'plan', planId] }),

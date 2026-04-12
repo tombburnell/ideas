@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { formatMinorUnits } from '../lib/currency';
+import { formatPlanFeatureConfigDisplay } from '../lib/feature-config';
 import type { Feature, PlanDetail, PlanFeature, ProductFamily } from '../lib/types';
 
 function featureCell(pf: PlanFeature | undefined) {
@@ -11,7 +12,11 @@ function featureCell(pf: PlanFeature | undefined) {
     return <Check size={14} className="mx-auto text-emerald-400" />;
   }
   if (feat.type === 'CONFIG') {
-    return <span className="text-zinc-200">{pf.configValue ?? '—'}</span>;
+    return (
+      <span className="text-zinc-200">
+        {formatPlanFeatureConfigDisplay(pf, feat)}
+      </span>
+    );
   }
   const parts: string[] = [];
   if (pf.includedAmount != null) parts.push(`${pf.includedAmount.toLocaleString()} incl.`);

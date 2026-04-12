@@ -47,6 +47,7 @@ enum FeatureType {
 enum ConfigType {
   INTEGER
   ENUM
+  MONEY
 }
 
 enum TierMode {
