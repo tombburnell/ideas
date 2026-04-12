@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import {
   useCustomers,
@@ -111,6 +111,65 @@ export function PlanDetailPage() {
   const [tierRows, setTierRows] = useState<{ fromUnit: string; toUnit: string; unitPriceMinor: string; flatFeeMinor: string; currency: string }[]>([]);
 
   const [expandedPf, setExpandedPf] = useState<string | null>(null);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkHandled = useRef<{ plan: boolean; priceId: string | null }>({ plan: false, priceId: null });
+
+  useEffect(() => {
+    deepLinkHandled.current = { plan: false, priceId: null };
+  }, [planId]);
+
+  useEffect(() => {
+    if (plan.isLoading || !plan.data) return;
+    if (!customerId || !tenantId) return;
+    const customerOk = customers.data?.some((c) => c.id === customerId);
+    const tenantOk = tenants.data?.some((t) => t.id === tenantId);
+    if (!customerOk || !tenantOk) return;
+
+    const p = plan.data;
+    const next = new URLSearchParams(searchParams);
+    let changed = false;
+
+    if (searchParams.get('editPlan') === '1' && !deepLinkHandled.current.plan) {
+      deepLinkHandled.current.plan = true;
+      setEName(p.name);
+      setEDesc(p.description ?? '');
+      setEStatus(p.status);
+      setEditOpen(true);
+      next.delete('editPlan');
+      changed = true;
+    }
+
+    const editPriceId = searchParams.get('editPrice');
+    if (editPriceId && deepLinkHandled.current.priceId !== editPriceId) {
+      const row = p.prices.find((pr) => pr.id === editPriceId);
+      if (row) {
+        deepLinkHandled.current.priceId = editPriceId;
+        setEditPriceRow(row);
+        setEpAccountId(row.providerAccountId);
+        setEpProvider(row.provider);
+        setEpExtId(row.externalPriceId);
+        setEpVariantId(row.externalVariantId ?? '');
+        setEpCurrency(row.currency);
+        setEpAmount(row.unitAmountMinor.toString());
+        setEpInterval(row.billingInterval);
+        setEpDisplayName(row.name ?? '');
+        next.delete('editPrice');
+        changed = true;
+      }
+    }
+
+    if (changed) setSearchParams(next, { replace: true });
+  }, [
+    plan.isLoading,
+    plan.data,
+    customers.data,
+    tenants.data,
+    customerId,
+    tenantId,
+    searchParams,
+    setSearchParams,
+  ]);
 
   if (customers.isLoading || tenants.isLoading || plan.isLoading) {
     return <p className="text-sm text-zinc-500">Loading…</p>;
@@ -460,7 +519,7 @@ export function PlanDetailPage() {
       </div>
 
       {/* Provider prices (linked to billing provider) */}
-      <section>
+      <section id="provider-prices">
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-medium text-zinc-300">Provider prices</h2>
