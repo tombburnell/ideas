@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Plus, Copy, Search, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import {
@@ -505,8 +505,13 @@ function ProductsTab({ customerId, tenantId }: { customerId: string; tenantId: s
 // ── Features Tab ──
 
 function FeaturesTab({ tenantId }: { tenantId: string }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const families = useProductFamilies(tenantId);
-  const [familyFilter, setFamilyFilter] = useState<string | null>(null);
+  const editFeatureIdInit = searchParams.get('editFeature');
+  const featureFamilyInit = searchParams.get('featureFamily');
+  const [familyFilter, setFamilyFilter] = useState<string | null>(() =>
+    editFeatureIdInit && featureFamilyInit ? featureFamilyInit : null,
+  );
   const features = useFeatures(tenantId, familyFilter ?? undefined);
   const createFeature = useCreateFeature(tenantId);
   const updateFeature = useUpdateFeature(tenantId);
@@ -531,6 +536,32 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
   const [eUnitLabel, setEUnitLabel] = useState('');
   const [eConfigType, setEConfigType] = useState<'INTEGER' | 'ENUM' | 'MONEY'>('INTEGER');
   const [eConfigOptions, setEConfigOptions] = useState('');
+
+  const editFromUrlConsumed = useRef(false);
+
+  useEffect(() => {
+    editFromUrlConsumed.current = false;
+  }, [tenantId]);
+
+  const editIdFromUrl = searchParams.get('editFeature');
+  useEffect(() => {
+    if (!editIdFromUrl || editFromUrlConsumed.current || features.isLoading) return;
+    const f = features.data?.find((x) => x.id === editIdFromUrl);
+    if (!f) return;
+    editFromUrlConsumed.current = true;
+    setEditFeature(f);
+    setEName(f.name);
+    setEDesc(f.description ?? '');
+    setEActive(f.active);
+    setEType(f.type ?? 'BOOLEAN');
+    setEUnitLabel(f.unitLabel ?? '');
+    setEConfigType(f.configType ?? 'INTEGER');
+    setEConfigOptions(Array.isArray(f.configOptions) ? f.configOptions.join(', ') : '');
+    const next = new URLSearchParams(searchParams);
+    next.delete('editFeature');
+    next.delete('featureFamily');
+    setSearchParams(next, { replace: true });
+  }, [editIdFromUrl, features.data, features.isLoading, searchParams, setSearchParams]);
 
   const resetCreate = () => {
     setCreateFamilyId('');

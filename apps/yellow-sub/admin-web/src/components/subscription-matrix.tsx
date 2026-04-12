@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Check } from 'lucide-react';
+import { Check, Pencil } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { formatMinorUnits } from '../lib/currency';
 import { formatPlanFeatureConfigDisplay } from '../lib/feature-config';
@@ -41,21 +41,25 @@ function intervalLabel(iv: string) {
   return m[iv] ?? iv;
 }
 
-function planPriceLines(plan: PlanDetail) {
+type PriceLine = { label: string; text: string; priceId?: string };
+
+function planPriceLines(plan: PlanDetail): PriceLine[] {
   const prices = plan.prices?.filter((p) => p.active) ?? [];
   const month = prices.find((p) => p.billingInterval === 'month');
   const year = prices.find((p) => p.billingInterval === 'year');
-  const lines: { label: string; text: string }[] = [];
+  const lines: PriceLine[] = [];
   if (month) {
     lines.push({
       label: 'Monthly',
       text: formatMinorUnits(month.unitAmountMinor, month.currency),
+      priceId: month.id,
     });
   }
   if (year) {
     lines.push({
       label: 'Yearly',
       text: formatMinorUnits(year.unitAmountMinor, year.currency),
+      priceId: year.id,
     });
   }
   if (!lines.length && prices.length) {
@@ -63,6 +67,7 @@ function planPriceLines(plan: PlanDetail) {
       lines.push({
         label: intervalLabel(pr.billingInterval),
         text: formatMinorUnits(pr.unitAmountMinor, pr.currency),
+        priceId: pr.id,
       });
     }
   }
@@ -113,23 +118,59 @@ function familyMatrixTable(
             </th>
             {sortedPlans.map((plan) => {
               const priceLines = planPriceLines(plan);
+              const planBase = `/customers/${customerId}/tenants/${tenantId}/plans/${plan.id}`;
               return (
                 <th
                   key={plan.id}
                   className="min-w-[160px] px-2 py-2 text-center align-bottom text-xs font-medium text-white"
                 >
                   <div className="space-y-1">
-                    <div>{plan.name}</div>
+                    <div className="flex items-center justify-center gap-1">
+                      <span>{plan.name}</span>
+                      <Link
+                        to={`${planBase}?editPlan=1`}
+                        title="Edit plan"
+                        className="inline-flex shrink-0 text-zinc-500 hover:text-emerald-400"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Pencil size={12} aria-hidden />
+                        <span className="sr-only">Edit plan</span>
+                      </Link>
+                    </div>
                     <div className="font-normal">
                       <Badge>{plan.status}</Badge>
                     </div>
                     <div className="space-y-0.5 text-[11px] font-normal text-zinc-400">
                       {priceLines.length === 0 ? (
-                        <span className="text-zinc-600">No prices</span>
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-zinc-600">No prices</span>
+                          <Link
+                            to={`${planBase}#provider-prices`}
+                            title="Add or edit prices on plan page"
+                            className="inline-flex shrink-0 text-zinc-500 hover:text-emerald-400"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Pencil size={12} aria-hidden />
+                            <span className="sr-only">Edit prices</span>
+                          </Link>
+                        </div>
                       ) : (
                         priceLines.map((line) => (
-                          <div key={line.label}>
-                            {line.label}: <span className="font-mono text-zinc-300">{line.text}</span>
+                          <div key={`${line.label}-${line.priceId ?? line.text}`} className="flex items-center justify-center gap-1">
+                            <span>
+                              {line.label}: <span className="font-mono text-zinc-300">{line.text}</span>
+                            </span>
+                            {line.priceId ? (
+                              <Link
+                                to={`${planBase}?editPrice=${encodeURIComponent(line.priceId)}`}
+                                title="Edit this price"
+                                className="inline-flex shrink-0 text-zinc-500 hover:text-emerald-400"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Pencil size={12} aria-hidden />
+                                <span className="sr-only">Edit price</span>
+                              </Link>
+                            ) : null}
                           </div>
                         ))
                       )}
@@ -154,7 +195,18 @@ function familyMatrixTable(
           {sortedFeatures.map((feat) => (
             <tr key={feat.id} className="border-b border-zinc-800/80 hover:bg-zinc-900/30">
               <td className="sticky left-0 z-10 border-r border-zinc-800 bg-zinc-950 px-3 py-2 align-top">
-                <div className="text-white">{feat.name}</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-white">{feat.name}</span>
+                  <Link
+                    to={`/customers/${customerId}/tenants/${tenantId}?tab=features&editFeature=${encodeURIComponent(feat.id)}&featureFamily=${encodeURIComponent(feat.productFamilyId)}`}
+                    title="Edit feature"
+                    className="inline-flex shrink-0 text-zinc-500 hover:text-emerald-400"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Pencil size={12} aria-hidden />
+                    <span className="sr-only">Edit feature</span>
+                  </Link>
+                </div>
                 <code className="text-[10px] text-zinc-600">{feat.key}</code>
               </td>
               {sortedPlans.map((plan) => {
