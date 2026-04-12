@@ -127,7 +127,7 @@ function OverviewTab({ customerId, tenantId }: { customerId: string; tenantId: s
       <div>
         <h2 className="text-sm font-medium text-zinc-300">Subscription comparison</h2>
         <p className="mt-1 text-xs text-zinc-500">
-          One table per product family: plans as columns, features as rows. Configure prices on each{' '}
+          One table per product family: plans as columns, features as rows (features must be linked to a plan). Configure prices on each{' '}
           <Link
             to={`/customers/${customerId}/tenants/${tenantId}?tab=products`}
             className="text-emerald-400 hover:underline"

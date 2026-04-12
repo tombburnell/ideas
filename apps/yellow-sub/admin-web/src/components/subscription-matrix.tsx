@@ -26,7 +26,9 @@ function featureCell(pf: PlanFeature | undefined) {
   if (pf.limitPeriod && pf.limitPeriod !== 'LIFETIME') {
     parts.push(`/${pf.limitPeriod.toLowerCase().replace('_', ' ')}`);
   }
-  return <span className="text-xs text-zinc-200">{parts.join(' · ')}</span>;
+  const unit = feat.unitLabel?.trim();
+  const limitText = parts.join(' · ') + (unit ? ` ${unit}` : '');
+  return <span className="text-xs text-zinc-200">{limitText}</span>;
 }
 
 function intervalLabel(iv: string) {
@@ -75,7 +77,15 @@ function familyMatrixTable(
   isLoading: boolean,
 ) {
   const sortedPlans = [...plans].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
-  const sortedFeatures = [...features].filter((f) => f.active).sort((a, b) => a.name.localeCompare(b.name));
+  const linkedFeatureIds = new Set<string>();
+  for (const plan of sortedPlans) {
+    for (const pf of plan.features ?? []) {
+      linkedFeatureIds.add(pf.featureId);
+    }
+  }
+  const sortedFeatures = [...features]
+    .filter((f) => f.active && linkedFeatureIds.has(f.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   if (isLoading) {
     return <p className="text-sm text-zinc-500">Loading…</p>;
@@ -137,7 +147,7 @@ function familyMatrixTable(
                 colSpan={1 + sortedPlans.length}
                 className="px-3 py-6 text-center text-sm text-zinc-500"
               >
-                No features in this family — add some under Features (scoped to this family).
+                No features linked to any plan in this family — link features from each plan under Products &amp; Plans.
               </td>
             </tr>
           )}
@@ -197,7 +207,7 @@ export function SubscriptionMatrix({ customerId, tenantId, sections, isLoading }
   return (
     <div className="space-y-8">
       <p className="text-xs text-zinc-500">
-        One table per product family: plans as columns, features as rows (only features defined for that family).
+        One table per product family: plans as columns, features as rows (only features linked to at least one plan in the family).
       </p>
       {sections.map(({ family, features, plans }) => (
         <div key={family.id} className="space-y-2">
