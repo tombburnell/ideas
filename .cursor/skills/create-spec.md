@@ -1,0 +1,1 @@
+../../.ai-assist/agents/create-spec.md

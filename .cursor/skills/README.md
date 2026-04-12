@@ -1,1 +1,1 @@
-../../.ai-assist/skills/README.md
+../../.ai-assist/agents/README.md
