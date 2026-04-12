@@ -273,10 +273,7 @@ export function SubscriptionMatrix({ customerId, tenantId, sections, isLoading }
   }
 
   return (
-    <div className="space-y-8">
-      <p className="text-xs text-zinc-500">
-        One table per product family: plans as columns, features as rows (only features linked to at least one plan in the family).
-      </p>
+    <div className="space-y-8">     
       {sections.map(({ family, features, plans }) => (
         <div key={family.id} className="space-y-2">
           <div className="flex items-baseline justify-between gap-2">
