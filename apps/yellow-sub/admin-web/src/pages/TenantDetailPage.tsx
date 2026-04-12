@@ -332,6 +332,39 @@ function ProductsTab({ customerId, tenantId }: { customerId: string; tenantId: s
     }
   };
 
+  const sortedFamilies = [...(families.data ?? [])].sort(
+    (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+  );
+
+  const plansForFamily = (familyId: string) =>
+    (plans.data ?? [])
+      .filter((p) => p.productFamilyId === familyId)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+
+  const openNewPlanForFamily = (familyId: string) => {
+    setPFamilyId(familyId);
+    setPKey('');
+    setPName('');
+    setPDesc('');
+    setPlanOpen(true);
+  };
+
+  const planColumns = [
+    { key: 'name', header: 'Name', render: (r: Plan) => <span className="text-white">{r.name}</span> },
+    { key: 'key', header: 'Key', render: (r: Plan) => <code className="text-xs text-zinc-500">{r.key}</code> },
+    { key: 'status', header: 'Status', render: (r: Plan) => <PlanStatusBadge status={r.status} />, className: 'w-24' },
+    {
+      key: 'actions',
+      header: '',
+      render: (r: Plan) => (
+        <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDeletePlan(r); }}>
+          <Trash2 size={14} />
+        </Button>
+      ),
+      className: 'w-16',
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <section>
@@ -366,41 +399,37 @@ function ProductsTab({ customerId, tenantId }: { customerId: string; tenantId: s
         />
       </section>
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
+      <section className="space-y-8">
+        <div>
           <h2 className="text-sm font-medium text-zinc-300">Plans</h2>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => setPlanOpen(true)}
-            disabled={!families.data?.length}
-          >
-            <Plus size={14} /> Add Plan
-          </Button>
+          <p className="mt-1 text-xs text-zinc-500">
+            Each product family has its own plan list. Add a plan from the family you want it under.
+          </p>
         </div>
-        <DataTable<Plan>
-          columns={[
-            { key: 'name', header: 'Name', render: (r) => <span className="text-white">{r.name}</span> },
-            { key: 'key', header: 'Key', render: (r) => <code className="text-xs text-zinc-500">{r.key}</code> },
-            { key: 'family', header: 'Family', render: (r) => r.productFamily?.name ?? '—' },
-            { key: 'status', header: 'Status', render: (r) => <PlanStatusBadge status={r.status} />, className: 'w-24' },
-            {
-              key: 'actions',
-              header: '',
-              render: (r) => (
-                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDeletePlan(r); }}>
-                  <Trash2 size={14} />
+        {sortedFamilies.map((family) => {
+          const familyPlans = plansForFamily(family.id);
+          return (
+            <div key={family.id} className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-medium text-white">{family.name}</h3>
+                  <code className="text-[10px] text-zinc-600">{family.key}</code>
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => openNewPlanForFamily(family.id)}>
+                  <Plus size={14} /> Add plan
                 </Button>
-              ),
-              className: 'w-16',
-            },
-          ]}
-          data={plans.data ?? []}
-          keyFn={(r) => r.id}
-          onRowClick={(r) => navigate(`/customers/${customerId}/tenants/${tenantId}/plans/${r.id}`)}
-          isLoading={plans.isLoading}
-          emptyMessage="No plans"
-        />
+              </div>
+              <DataTable<Plan>
+                columns={planColumns}
+                data={familyPlans}
+                keyFn={(r) => r.id}
+                onRowClick={(r) => navigate(`/customers/${customerId}/tenants/${tenantId}/plans/${r.id}`)}
+                isLoading={plans.isLoading}
+                emptyMessage="No plans in this family"
+              />
+            </div>
+          );
+        })}
       </section>
 
       {/* Create Family */}
@@ -452,6 +481,7 @@ function ProductsTab({ customerId, tenantId }: { customerId: string; tenantId: s
             onChange={(e) => setPFamilyId(e.currentTarget.value)}
             options={(families.data ?? []).map((f) => ({ value: f.id, label: f.name }))}
             placeholder="Select family"
+            required
           />
           <Input label="Name" value={pName} onChange={(e) => setPName(e.currentTarget.value)} required />
           <KeyField
