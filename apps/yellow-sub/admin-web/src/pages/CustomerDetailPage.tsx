@@ -17,6 +17,7 @@ import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { StatusBadge } from '../components/ui/badge';
 import { useToast } from '../components/ui/toast';
+import { SlugField } from '../components/slug-field';
 import { CURRENCIES } from '../lib/currency';
 import type { Brand, Tenant } from '../lib/types';
 
@@ -108,27 +109,6 @@ export function CustomerDetailPage() {
         </Button>
       </div>
 
-      {/* Brands */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-zinc-300">Brands</h2>
-          <Button size="sm" variant="secondary" onClick={() => setBrandOpen(true)}>
-            <Plus size={14} /> Add Brand
-          </Button>
-        </div>
-        <DataTable<Brand>
-          columns={[
-            { key: 'name', header: 'Name', render: (r) => <span className="text-white">{r.name}</span> },
-            { key: 'slug', header: 'Slug', render: (r) => <code className="text-xs text-zinc-500">{r.slug}</code> },
-            { key: 'status', header: 'Status', render: (r) => <StatusBadge active={r.active} />, className: 'w-24' },
-          ]}
-          data={brands.data ?? []}
-          keyFn={(r) => r.id}
-          isLoading={brands.isLoading}
-          emptyMessage="No brands"
-        />
-      </section>
-
       {/* Tenants */}
       <section>
         <div className="mb-3 flex items-center justify-between">
@@ -152,11 +132,38 @@ export function CustomerDetailPage() {
         />
       </section>
 
+      {/* Brands */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-zinc-300">Brands</h2>
+          <Button size="sm" variant="secondary" onClick={() => setBrandOpen(true)}>
+            <Plus size={14} /> Add Brand
+          </Button>
+        </div>
+        <DataTable<Brand>
+          columns={[
+            { key: 'name', header: 'Name', render: (r) => <span className="text-white">{r.name}</span> },
+            { key: 'slug', header: 'Slug', render: (r) => <code className="text-xs text-zinc-500">{r.slug}</code> },
+            { key: 'status', header: 'Status', render: (r) => <StatusBadge active={r.active} />, className: 'w-24' },
+          ]}
+          data={brands.data ?? []}
+          keyFn={(r) => r.id}
+          isLoading={brands.isLoading}
+          emptyMessage="No brands"
+        />
+      </section>
+
       {/* Brand Dialog */}
       <Dialog open={brandOpen} onClose={() => setBrandOpen(false)} title="New Brand">
         <form onSubmit={handleCreateBrand} className="space-y-4">
           <Input label="Name" value={brandName} onChange={(e) => setBrandName(e.currentTarget.value)} required autoFocus />
-          <Input label="Slug" value={brandSlug} onChange={(e) => setBrandSlug(e.currentTarget.value)} required pattern="[a-z0-9-]+" placeholder="my-brand" />
+          <SlugField
+            label="Slug"
+            title={brandName}
+            value={brandSlug}
+            onChange={setBrandSlug}
+            takenValues={(brands.data ?? []).map((b) => b.slug)}
+          />
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setBrandOpen(false)}>Cancel</Button>
             <Button type="submit" size="sm" disabled={createBrand.isPending}>{createBrand.isPending ? 'Creating…' : 'Create'}</Button>
@@ -168,7 +175,13 @@ export function CustomerDetailPage() {
       <Dialog open={tenantOpen} onClose={() => setTenantOpen(false)} title="New Tenant">
         <form onSubmit={handleCreateTenant} className="space-y-4">
           <Input label="Name" value={tenantName} onChange={(e) => setTenantName(e.currentTarget.value)} required autoFocus />
-          <Input label="Slug" value={tenantSlug} onChange={(e) => setTenantSlug(e.currentTarget.value)} required pattern="[a-z0-9-]+" placeholder="my-app" />
+          <SlugField
+            label="Slug"
+            title={tenantName}
+            value={tenantSlug}
+            onChange={setTenantSlug}
+            takenValues={(tenants.data ?? []).map((t) => t.slug)}
+          />
           <Select
             label="Default Currency"
             value={tenantCurrency}
