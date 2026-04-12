@@ -34,7 +34,7 @@ import { Input, Textarea } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { Badge, StatusBadge, PlanStatusBadge, SubStatusBadge } from '../components/ui/badge';
 import { useToast } from '../components/ui/toast';
-import { SubscriptionMatrix } from '../components/subscription-matrix';
+import { SubscriptionMatrix, type SubscriptionMatrixSection } from '../components/subscription-matrix';
 import { KeyField } from '../components/key-field';
 import type {
   BillingProviderAccount,
@@ -112,17 +112,24 @@ export function TenantDetailPage() {
 // ── Overview Tab ──
 
 function OverviewTab({ customerId, tenantId }: { customerId: string; tenantId: string }) {
+  const families = useProductFamilies(tenantId);
   const features = useFeatures(tenantId);
-  const { details: planDetails, isLoading } = usePlansWithDetails(tenantId);
+  const { details: planDetails, isLoading: plansLoading } = usePlansWithDetails(tenantId);
+
+  const sections: SubscriptionMatrixSection[] = (families.data ?? []).map((family) => ({
+    family,
+    features: (features.data ?? []).filter((f) => f.productFamilyId === family.id),
+    plans: planDetails.filter((p) => p.productFamilyId === family.id),
+  }));
 
   return (
     <section className="space-y-4">
       <div>
         <h2 className="text-sm font-medium text-zinc-300">Subscription comparison</h2>
         <p className="mt-1 text-xs text-zinc-500">
-          Plans as columns, features as rows. Configure prices and provider links on each{' '}
+          One table per product family: plans as columns, features as rows. Configure prices on each{' '}
           <Link
-            to={`/customers/${customerId}/tenants/${tenantId}`}
+            to={`/customers/${customerId}/tenants/${tenantId}?tab=products`}
             className="text-emerald-400 hover:underline"
           >
             plan
@@ -133,9 +140,8 @@ function OverviewTab({ customerId, tenantId }: { customerId: string; tenantId: s
       <SubscriptionMatrix
         customerId={customerId}
         tenantId={tenantId}
-        features={features.data ?? []}
-        plans={planDetails}
-        isLoading={features.isLoading || isLoading}
+        sections={sections}
+        isLoading={families.isLoading || features.isLoading || plansLoading}
       />
     </section>
   );
@@ -469,13 +475,16 @@ function ProductsTab({ customerId, tenantId }: { customerId: string; tenantId: s
 // ── Features Tab ──
 
 function FeaturesTab({ tenantId }: { tenantId: string }) {
-  const features = useFeatures(tenantId);
+  const families = useProductFamilies(tenantId);
+  const [familyFilter, setFamilyFilter] = useState<string | null>(null);
+  const features = useFeatures(tenantId, familyFilter ?? undefined);
   const createFeature = useCreateFeature(tenantId);
   const updateFeature = useUpdateFeature(tenantId);
   const deleteFeature = useDeleteFeature(tenantId);
   const { toast } = useToast();
 
   const [open, setOpen] = useState(false);
+  const [createFamilyId, setCreateFamilyId] = useState('');
   const [key, setKey] = useState('');
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
@@ -494,15 +503,27 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
   const [eConfigOptions, setEConfigOptions] = useState('');
 
   const resetCreate = () => {
+    setCreateFamilyId('');
     setKey(''); setName(''); setDesc('');
     setType('BOOLEAN'); setUnitLabel('');
     setConfigType('INTEGER'); setConfigOptions('');
   };
 
+  const openCreateDialog = () => {
+    const first = families.data?.[0]?.id ?? '';
+    setCreateFamilyId(familyFilter ?? first);
+    setOpen(true);
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!createFamilyId) {
+      toast('Select a product family', 'error');
+      return;
+    }
     try {
       await createFeature.mutateAsync({
+        productFamilyId: createFamilyId,
         key, name, description: desc || undefined,
         type,
         unitLabel: type === 'LIMIT' ? unitLabel || undefined : undefined,
@@ -569,17 +590,60 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
     return 'Boolean';
   };
 
+  const keysTakenInCreateFamily = (features.data ?? [])
+    .filter((f) => f.productFamilyId === createFamilyId)
+    .map((f) => f.key);
+
   return (
     <section>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-medium text-zinc-300">Features</h2>
-        <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+        <Button size="sm" variant="secondary" onClick={openCreateDialog} disabled={!families.data?.length}>
           <Plus size={14} /> Add Feature
         </Button>
       </div>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-xs text-zinc-500">Family:</span>
+        <button
+          type="button"
+          onClick={() => setFamilyFilter(null)}
+          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+            familyFilter === null
+              ? 'border-white bg-zinc-800 text-white'
+              : 'border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'
+          }`}
+        >
+          All
+        </button>
+        {(families.data ?? []).map((fam) => (
+          <button
+            key={fam.id}
+            type="button"
+            onClick={() => setFamilyFilter(fam.id)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              familyFilter === fam.id
+                ? 'border-white bg-zinc-800 text-white'
+                : 'border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200'
+            }`}
+          >
+            {fam.name}
+          </button>
+        ))}
+      </div>
+      {!families.data?.length && (
+        <p className="mb-3 text-xs text-amber-500/90">Create a product family under Products &amp; Plans before adding features.</p>
+      )}
       <DataTable<Feature>
         columns={[
           { key: 'name', header: 'Name', render: (r) => <span className="text-white">{r.name}</span> },
+          {
+            key: 'family',
+            header: 'Family',
+            render: (r) => (
+              <span className="text-zinc-400">{r.productFamily?.name ?? '—'}</span>
+            ),
+            className: 'w-36',
+          },
           { key: 'key', header: 'Key', render: (r) => <code className="text-xs text-zinc-500">{r.key}</code> },
           { key: 'type', header: 'Type', render: (r) => <Badge>{typeLabel(r)}</Badge> },
           { key: 'desc', header: 'Description', render: (r) => <span className="text-zinc-400">{r.description ?? '—'}</span> },
@@ -605,13 +669,21 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
       {/* Create Feature */}
       <Dialog open={open} onClose={() => setOpen(false)} title="New Feature">
         <form onSubmit={handleCreate} className="space-y-4">
+          <Select
+            label="Product family"
+            value={createFamilyId}
+            onChange={(e) => setCreateFamilyId(e.currentTarget.value)}
+            options={(families.data ?? []).map((f) => ({ value: f.id, label: f.name }))}
+            placeholder="Select family"
+            required
+          />
           <Input label="Name" value={name} onChange={(e) => setName(e.currentTarget.value)} required autoFocus />
           <KeyField
             label="Key"
             title={name}
             value={key}
             onChange={setKey}
-            takenValues={(features.data ?? []).map((f) => f.key)}
+            takenValues={keysTakenInCreateFamily}
           />
           <Select
             label="Type"
@@ -654,9 +726,15 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
       <Dialog open={!!editFeature} onClose={() => setEditFeature(null)} title="Edit Feature">
         <form onSubmit={handleUpdate} className="space-y-4">
           {editFeature && (
-            <div className="rounded-md bg-zinc-900 px-3 py-2">
-              <span className="text-xs text-zinc-500">Key: </span>
-              <code className="text-xs text-zinc-300">{editFeature.key}</code>
+            <div className="space-y-1 rounded-md bg-zinc-900 px-3 py-2">
+              <div>
+                <span className="text-xs text-zinc-500">Family: </span>
+                <span className="text-xs text-zinc-300">{editFeature.productFamily?.name ?? '—'}</span>
+              </div>
+              <div>
+                <span className="text-xs text-zinc-500">Key: </span>
+                <code className="text-xs text-zinc-300">{editFeature.key}</code>
+              </div>
             </div>
           )}
           <Input label="Name" value={eName} onChange={(e) => setEName(e.currentTarget.value)} required autoFocus />

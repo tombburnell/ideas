@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { formatMinorUnits } from '../lib/currency';
-import type { Feature, PlanDetail, PlanFeature } from '../lib/types';
+import type { Feature, PlanDetail, PlanFeature, ProductFamily } from '../lib/types';
 
 function featureCell(pf: PlanFeature | undefined) {
   const feat = pf?.feature;
@@ -62,27 +62,25 @@ function planPriceLines(plan: PlanDetail) {
   return lines;
 }
 
-type Props = {
-  customerId: string;
-  tenantId: string;
-  features: Feature[];
-  plans: PlanDetail[];
-  isLoading: boolean;
-};
-
-export function SubscriptionMatrix({ customerId, tenantId, features, plans, isLoading }: Props) {
+function familyMatrixTable(
+  customerId: string,
+  tenantId: string,
+  features: Feature[],
+  plans: PlanDetail[],
+  isLoading: boolean,
+) {
   const sortedPlans = [...plans].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
   const sortedFeatures = [...features].filter((f) => f.active).sort((a, b) => a.name.localeCompare(b.name));
 
   if (isLoading) {
-    return <p className="text-sm text-zinc-500">Loading plan comparison…</p>;
+    return <p className="text-sm text-zinc-500">Loading…</p>;
   }
 
   if (!sortedPlans.length) {
     return (
       <p className="text-sm text-zinc-500">
-        No plans yet. Add plans under{' '}
-        <Link to={`/customers/${customerId}/tenants/${tenantId}`} className="text-emerald-400 hover:underline">
+        No plans in this family yet. Add plans under{' '}
+        <Link to={`/customers/${customerId}/tenants/${tenantId}?tab=products`} className="text-emerald-400 hover:underline">
           Products &amp; Plans
         </Link>
         .
@@ -91,79 +89,120 @@ export function SubscriptionMatrix({ customerId, tenantId, features, plans, isLo
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-zinc-500">
-        Active features and limits per plan. Prices shown are from linked provider prices (monthly / yearly when configured).
-      </p>
-      {!sortedFeatures.length && (
-        <p className="text-xs text-amber-500/90">No features defined yet — add some under the Features tab.</p>
-      )}
-      <div className="overflow-x-auto rounded-lg border border-zinc-800">
-        <table className="w-full min-w-[640px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-900/50">
-              <th className="sticky left-0 z-10 min-w-[140px] border-r border-zinc-800 bg-zinc-900/95 px-3 py-2 text-left text-xs font-medium text-zinc-500">
-                Feature
-              </th>
-              {sortedPlans.map((plan) => {
-                const priceLines = planPriceLines(plan);
-                return (
-                  <th
-                    key={plan.id}
-                    className="min-w-[160px] px-2 py-2 text-center align-bottom text-xs font-medium text-white"
-                  >
-                    <div className="space-y-1">
-                      <div>{plan.name}</div>
-                      <div className="font-normal">
-                        <Badge>{plan.status}</Badge>
-                      </div>
-                      <div className="space-y-0.5 text-[11px] font-normal text-zinc-400">
-                        {priceLines.length === 0 ? (
-                          <span className="text-zinc-600">No prices</span>
-                        ) : (
-                          priceLines.map((line) => (
-                            <div key={line.label}>
-                              {line.label}: <span className="font-mono text-zinc-300">{line.text}</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
+    <div className="overflow-x-auto rounded-lg border border-zinc-800">
+      <table className="w-full min-w-[640px] border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-zinc-800 bg-zinc-900/50">
+            <th className="sticky left-0 z-10 min-w-[140px] border-r border-zinc-800 bg-zinc-900/95 px-3 py-2 text-left text-xs font-medium text-zinc-500">
+              Feature
+            </th>
+            {sortedPlans.map((plan) => {
+              const priceLines = planPriceLines(plan);
+              return (
+                <th
+                  key={plan.id}
+                  className="min-w-[160px] px-2 py-2 text-center align-bottom text-xs font-medium text-white"
+                >
+                  <div className="space-y-1">
+                    <div>{plan.name}</div>
+                    <div className="font-normal">
+                      <Badge>{plan.status}</Badge>
                     </div>
-                  </th>
+                    <div className="space-y-0.5 text-[11px] font-normal text-zinc-400">
+                      {priceLines.length === 0 ? (
+                        <span className="text-zinc-600">No prices</span>
+                      ) : (
+                        priceLines.map((line) => (
+                          <div key={line.label}>
+                            {line.label}: <span className="font-mono text-zinc-300">{line.text}</span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedFeatures.length === 0 && (
+            <tr>
+              <td
+                colSpan={1 + sortedPlans.length}
+                className="px-3 py-6 text-center text-sm text-zinc-500"
+              >
+                No features in this family — add some under Features (scoped to this family).
+              </td>
+            </tr>
+          )}
+          {sortedFeatures.map((feat) => (
+            <tr key={feat.id} className="border-b border-zinc-800/80 hover:bg-zinc-900/30">
+              <td className="sticky left-0 z-10 border-r border-zinc-800 bg-zinc-950 px-3 py-2 align-top">
+                <div className="text-white">{feat.name}</div>
+                <code className="text-[10px] text-zinc-600">{feat.key}</code>
+              </td>
+              {sortedPlans.map((plan) => {
+                const pf = plan.features.find((x) => x.featureId === feat.id);
+                return (
+                  <td key={`${plan.id}-${feat.id}`} className="px-2 py-2 text-center align-top">
+                    {featureCell(pf)}
+                  </td>
                 );
               })}
             </tr>
-          </thead>
-          <tbody>
-            {sortedFeatures.length === 0 && (
-              <tr>
-                <td
-                  colSpan={1 + sortedPlans.length}
-                  className="px-3 py-6 text-center text-sm text-zinc-500"
-                >
-                  Add features to compare plans.
-                </td>
-              </tr>
-            )}
-            {sortedFeatures.map((feat) => (
-              <tr key={feat.id} className="border-b border-zinc-800/80 hover:bg-zinc-900/30">
-                <td className="sticky left-0 z-10 border-r border-zinc-800 bg-zinc-950 px-3 py-2 align-top">
-                  <div className="text-white">{feat.name}</div>
-                  <code className="text-[10px] text-zinc-600">{feat.key}</code>
-                </td>
-                {sortedPlans.map((plan) => {
-                  const pf = plan.features.find((x) => x.featureId === feat.id);
-                  return (
-                    <td key={`${plan.id}-${feat.id}`} className="px-2 py-2 text-center align-top">
-                      {featureCell(pf)}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export type SubscriptionMatrixSection = {
+  family: ProductFamily;
+  features: Feature[];
+  plans: PlanDetail[];
+};
+
+type Props = {
+  customerId: string;
+  tenantId: string;
+  sections: SubscriptionMatrixSection[];
+  isLoading: boolean;
+};
+
+/** One comparison table per product family (stacked). */
+export function SubscriptionMatrix({ customerId, tenantId, sections, isLoading }: Props) {
+  if (isLoading) {
+    return <p className="text-sm text-zinc-500">Loading plan comparison…</p>;
+  }
+
+  if (!sections.length) {
+    return (
+      <p className="text-sm text-zinc-500">
+        No product families yet. Add a family under{' '}
+        <Link to={`/customers/${customerId}/tenants/${tenantId}?tab=products`} className="text-emerald-400 hover:underline">
+          Products &amp; Plans
+        </Link>
+        .
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <p className="text-xs text-zinc-500">
+        One table per product family: plans as columns, features as rows (only features defined for that family).
+      </p>
+      {sections.map(({ family, features, plans }) => (
+        <div key={family.id} className="space-y-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-sm font-medium text-white">{family.name}</h3>
+            <code className="text-[10px] text-zinc-600">{family.key}</code>
+          </div>
+          {familyMatrixTable(customerId, tenantId, features, plans, false)}
+        </div>
+      ))}
     </div>
   );
 }
