@@ -98,7 +98,7 @@ export type Feature = {
   description?: string;
   type: 'BOOLEAN' | 'LIMIT' | 'CONFIG';
   unitLabel?: string;
-  configType?: 'INTEGER' | 'ENUM';
+  configType?: 'INTEGER' | 'ENUM' | 'MONEY';
   configOptions?: string[];
   active: boolean;
   productFamily?: Pick<ProductFamily, 'id' | 'key' | 'name'>;

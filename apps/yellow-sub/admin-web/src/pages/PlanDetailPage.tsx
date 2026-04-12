@@ -24,6 +24,13 @@ import { Select } from '../components/ui/select';
 import { Badge, PlanStatusBadge } from '../components/ui/badge';
 import { useToast } from '../components/ui/toast';
 import { CURRENCIES, formatMinorUnits } from '../lib/currency';
+import {
+  formatPlanFeatureConfigDisplay,
+  majorAmountStringFromMinor,
+  parseIntegerConfigInput,
+  parseMoneyConfigInput,
+  parseStoredMoneyConfig,
+} from '../lib/feature-config';
 import type { PlanFeature, PlanPrice, MeteringTier } from '../lib/types';
 
 export function PlanDetailPage() {
@@ -86,6 +93,8 @@ export function PlanDetailPage() {
   const [lfResets, setLfResets] = useState(false);
   const [lfTierMode, setLfTierMode] = useState('');
   const [lfConfigValue, setLfConfigValue] = useState('');
+  const [lfMoneyAmount, setLfMoneyAmount] = useState('');
+  const [lfMoneyCurrency, setLfMoneyCurrency] = useState('');
 
   const [editPf, setEditPf] = useState<PlanFeature | null>(null);
   const [epIncluded, setEpIncluded] = useState('');
@@ -95,6 +104,8 @@ export function PlanDetailPage() {
   const [epResets, setEpResets] = useState(false);
   const [epTierMode, setEpTierMode] = useState('');
   const [epConfigValue, setEpConfigValue] = useState('');
+  const [epMoneyAmount, setEpMoneyAmount] = useState('');
+  const [epMoneyCurrency, setEpMoneyCurrency] = useState('');
 
   const [tierPf, setTierPf] = useState<PlanFeature | null>(null);
   const [tierRows, setTierRows] = useState<{ fromUnit: string; toUnit: string; unitPriceMinor: string; flatFeeMinor: string; currency: string }[]>([]);
@@ -200,12 +211,35 @@ export function PlanDetailPage() {
   const resetLinkForm = () => {
     setFeatureId(''); setLfIncluded(''); setLfSoft(''); setLfHard('');
     setLfPeriod('MONTH'); setLfResets(false); setLfTierMode(''); setLfConfigValue('');
+    setLfMoneyAmount('');
+    setLfMoneyCurrency(tenant.defaultCurrency);
+  };
+
+  const resolveLinkConfigValue = (): string | null | undefined => {
+    const feat = features.data?.find((f) => f.id === featureId);
+    if (feat?.type !== 'CONFIG') return undefined;
+    if (feat.configType === 'ENUM') return lfConfigValue || null;
+    if (feat.configType === 'MONEY') return parseMoneyConfigInput(lfMoneyAmount, lfMoneyCurrency);
+    return parseIntegerConfigInput(lfConfigValue);
   };
 
   const handleLinkFeature = async (e: React.FormEvent) => {
     e.preventDefault();
     const feat = features.data?.find((f) => f.id === featureId);
     try {
+      let configValue: string | null | undefined;
+      if (feat?.type === 'CONFIG') {
+        try {
+          configValue = resolveLinkConfigValue();
+        } catch (err) {
+          toast(String(err), 'error');
+          return;
+        }
+        if (feat.configType === 'ENUM' && !configValue) {
+          toast('Select a config value', 'error');
+          return;
+        }
+      }
       await linkFeature.mutateAsync({
         featureId,
         includedAmount: feat?.type === 'LIMIT' && lfIncluded ? parseInt(lfIncluded, 10) : undefined,
@@ -213,7 +247,7 @@ export function PlanDetailPage() {
         hardLimit: feat?.type === 'LIMIT' && lfHard ? parseInt(lfHard, 10) : undefined,
         limitPeriod: feat?.type === 'LIMIT' && lfResets ? lfPeriod : undefined,
         tierMode: feat?.type === 'LIMIT' && lfTierMode ? lfTierMode : undefined,
-        configValue: feat?.type === 'CONFIG' ? lfConfigValue : undefined,
+        configValue,
       });
       toast('Feature linked');
       setFeatureOpen(false);
@@ -232,7 +266,19 @@ export function PlanDetailPage() {
     setEpResets(hasReset);
     setEpPeriod(hasReset ? pf.limitPeriod! : 'MONTH');
     setEpTierMode(pf.tierMode ?? '');
-    setEpConfigValue(pf.configValue ?? '');
+    const f = pf.feature;
+    if (f?.type === 'CONFIG' && f.configType === 'MONEY') {
+      const parsed = parseStoredMoneyConfig(pf.configValue);
+      setEpMoneyCurrency(parsed?.currency ?? tenant.defaultCurrency);
+      setEpMoneyAmount(
+        parsed ? majorAmountStringFromMinor(parsed.amountMinor, parsed.currency) : '',
+      );
+      setEpConfigValue('');
+    } else {
+      setEpMoneyCurrency(tenant.defaultCurrency);
+      setEpMoneyAmount('');
+      setEpConfigValue(pf.configValue ?? '');
+    }
   };
 
   const handleUpdatePlanFeature = async (e: React.FormEvent) => {
@@ -240,6 +286,21 @@ export function PlanDetailPage() {
     if (!editPf) return;
     const feat = editPf.feature;
     try {
+      let configValue: string | null = null;
+      if (feat?.type === 'CONFIG') {
+        try {
+          if (feat.configType === 'ENUM') {
+            configValue = epConfigValue || null;
+          } else if (feat.configType === 'MONEY') {
+            configValue = parseMoneyConfigInput(epMoneyAmount, epMoneyCurrency);
+          } else {
+            configValue = parseIntegerConfigInput(epConfigValue);
+          }
+        } catch (err) {
+          toast(String(err), 'error');
+          return;
+        }
+      }
       await updatePlanFeature.mutateAsync({
         planFeatureId: editPf.id,
         includedAmount: feat?.type === 'LIMIT' && epIncluded ? parseInt(epIncluded, 10) : null,
@@ -247,7 +308,7 @@ export function PlanDetailPage() {
         hardLimit: feat?.type === 'LIMIT' && epHard ? parseInt(epHard, 10) : null,
         limitPeriod: feat?.type === 'LIMIT' && epResets ? epPeriod : null,
         tierMode: feat?.type === 'LIMIT' && epTierMode ? epTierMode : null,
-        configValue: feat?.type === 'CONFIG' ? epConfigValue : null,
+        configValue,
       });
       toast('Plan feature updated');
       setEditPf(null);
@@ -321,7 +382,13 @@ export function PlanDetailPage() {
     const feat = pf.feature;
     if (!feat) return '—';
     if (feat.type === 'BOOLEAN') return <Check size={14} className="text-emerald-400" />;
-    if (feat.type === 'CONFIG') return <span className="text-zinc-200">{pf.configValue ?? '—'}</span>;
+    if (feat.type === 'CONFIG') {
+      return (
+        <span className="text-zinc-200">
+          {formatPlanFeatureConfigDisplay(pf, feat)}
+        </span>
+      );
+    }
     const parts: string[] = [];
     if (pf.includedAmount != null) parts.push(`${pf.includedAmount.toLocaleString()} included`);
     if (pf.softLimit != null) parts.push(`warn ${pf.softLimit.toLocaleString()}`);
@@ -446,7 +513,15 @@ export function PlanDetailPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-medium text-zinc-300">Features</h2>
-          <Button size="sm" variant="secondary" onClick={() => setFeatureOpen(true)} disabled={unlinkedFeatures.length === 0}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setLfMoneyCurrency(tenant.defaultCurrency);
+              setFeatureOpen(true);
+            }}
+            disabled={unlinkedFeatures.length === 0}
+          >
             <Plus size={14} /> Link Feature
           </Button>
         </div>
@@ -483,7 +558,11 @@ export function PlanDetailPage() {
                       <td className="px-3 py-2 text-white">{feat?.name ?? pf.featureId}</td>
                       <td className="px-3 py-2">
                         <Badge>
-                          {feat?.type === 'LIMIT' ? (feat.unitLabel ?? 'Limit') : feat?.type === 'CONFIG' ? (feat.configType === 'ENUM' ? 'Enum' : 'Integer') : 'Boolean'}
+                          {feat?.type === 'LIMIT'
+                            ? (feat.unitLabel ?? 'Limit')
+                            : feat?.type === 'CONFIG'
+                              ? (feat.configType === 'ENUM' ? 'Enum' : feat.configType === 'MONEY' ? 'Money' : 'Integer')
+                              : 'Boolean'}
                         </Badge>
                       </td>
                       <td className="px-3 py-2">{featureValueDisplay(pf)}</td>
@@ -664,7 +743,13 @@ export function PlanDetailPage() {
           <Select
             label="Feature"
             value={featureId}
-            onChange={(e) => setFeatureId(e.currentTarget.value)}
+            onChange={(e) => {
+              const id = e.currentTarget.value;
+              setFeatureId(id);
+              setLfConfigValue('');
+              setLfMoneyAmount('');
+              setLfMoneyCurrency(tenant.defaultCurrency);
+            }}
             options={unlinkedFeatures.map((f) => ({ value: f.id, label: `${f.name} (${f.key}) — ${f.type}` }))}
             placeholder="Select feature"
             required
@@ -719,8 +804,28 @@ export function PlanDetailPage() {
                 placeholder="Select value"
                 required
               />
+            ) : selectedFeature.configType === 'MONEY' ? (
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  label="Currency"
+                  value={lfMoneyCurrency}
+                  onChange={(e) => setLfMoneyCurrency(e.currentTarget.value)}
+                  options={CURRENCIES}
+                />
+                <Input
+                  label="Amount"
+                  value={lfMoneyAmount}
+                  onChange={(e) => setLfMoneyAmount(e.currentTarget.value)}
+                  placeholder="unlimited"
+                />
+              </div>
             ) : (
-              <Input label="Config Value" value={lfConfigValue} onChange={(e) => setLfConfigValue(e.currentTarget.value)} required placeholder="90" />
+              <Input
+                label="Config Value"
+                value={lfConfigValue}
+                onChange={(e) => setLfConfigValue(e.currentTarget.value)}
+                placeholder="unlimited"
+              />
             )
           )}
           <div className="flex justify-end gap-2 pt-2">
@@ -781,8 +886,28 @@ export function PlanDetailPage() {
                 onChange={(e) => setEpConfigValue(e.currentTarget.value)}
                 options={editPf.feature.configOptions.map((o) => ({ value: o, label: o }))}
               />
+            ) : editPf.feature.configType === 'MONEY' ? (
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  label="Currency"
+                  value={epMoneyCurrency}
+                  onChange={(e) => setEpMoneyCurrency(e.currentTarget.value)}
+                  options={CURRENCIES}
+                />
+                <Input
+                  label="Amount"
+                  value={epMoneyAmount}
+                  onChange={(e) => setEpMoneyAmount(e.currentTarget.value)}
+                  placeholder="unlimited"
+                />
+              </div>
             ) : (
-              <Input label="Config Value" value={epConfigValue} onChange={(e) => setEpConfigValue(e.currentTarget.value)} />
+              <Input
+                label="Config Value"
+                value={epConfigValue}
+                onChange={(e) => setEpConfigValue(e.currentTarget.value)}
+                placeholder="unlimited"
+              />
             )
           )}
           <div className="flex justify-end gap-2 pt-2">
