@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import {
@@ -31,6 +31,7 @@ import {
   parseMoneyConfigInput,
   parseStoredMoneyConfig,
 } from '../lib/feature-config';
+import { formatIncludedLimitFragment } from '../lib/plan-feature-limit-display';
 import type { Feature, PlanFeature, PlanPrice, MeteringTier } from '../lib/types';
 
 function planFeatureConfigSubtype(feat: Feature): string {
@@ -454,13 +455,35 @@ export function PlanDetailPage() {
         </span>
       );
     }
-    const parts: string[] = [];
-    if (pf.includedAmount != null) parts.push(`${pf.includedAmount.toLocaleString()} included`);
-    if (pf.softLimit != null) parts.push(`warn ${pf.softLimit.toLocaleString()}`);
-    if (pf.hardLimit != null) parts.push(`max ${pf.hardLimit.toLocaleString()}`);
-    if (!parts.length) parts.push('unlimited');
-    if (pf.limitPeriod && pf.limitPeriod !== 'LIFETIME') parts.push(`per ${pf.limitPeriod.toLowerCase().replace('_', ' ')}`);
-    return <span className="text-zinc-200">{parts.join(' / ')}</span>;
+    const unit = feat.unitLabel?.trim();
+    const segments: ReactNode[] = [];
+    if (pf.includedAmount != null) {
+      segments.push(formatIncludedLimitFragment(pf.includedAmount, unit, 'included'));
+    }
+    if (pf.softLimit != null) segments.push(`warn ${pf.softLimit.toLocaleString()}`);
+    if (pf.hardLimit != null) segments.push(`max ${pf.hardLimit.toLocaleString()}`);
+    if (!segments.length) segments.push('unlimited');
+    if (pf.limitPeriod && pf.limitPeriod !== 'LIFETIME') {
+      segments.push(`per ${pf.limitPeriod.toLowerCase().replace('_', ' ')}`);
+    }
+    const trailingUnit =
+      pf.includedAmount == null && unit ? (
+        <>
+          {' '}
+          <span className="text-zinc-500">{unit}</span>
+        </>
+      ) : null;
+    return (
+      <span className="text-zinc-200">
+        {segments.map((s, i) => (
+          <Fragment key={i}>
+            {i > 0 ? ' / ' : null}
+            {s}
+          </Fragment>
+        ))}
+        {trailingUnit}
+      </span>
+    );
   };
 
   const tierPreview = (tiers: MeteringTier[]) =>
