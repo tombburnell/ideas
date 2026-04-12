@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import {
@@ -31,7 +31,13 @@ import {
   parseMoneyConfigInput,
   parseStoredMoneyConfig,
 } from '../lib/feature-config';
-import type { PlanFeature, PlanPrice, MeteringTier } from '../lib/types';
+import type { Feature, PlanFeature, PlanPrice, MeteringTier } from '../lib/types';
+
+function planFeatureConfigSubtype(feat: Feature): string {
+  if (feat.configType === 'ENUM') return 'Enum';
+  if (feat.configType === 'MONEY') return 'Money';
+  return 'Integer';
+}
 
 export function PlanDetailPage() {
   const { id: customerId, tenantId, planId } = useParams<{
@@ -525,16 +531,24 @@ export function PlanDetailPage() {
             <Plus size={14} /> Link Feature
           </Button>
         </div>
-        <div className="overflow-hidden rounded-lg border border-zinc-800">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-lg border border-zinc-800">
+          <table className="w-full min-w-[720px] table-fixed border-collapse text-sm">
+            <colgroup>
+              <col className="w-10" />
+              <col />
+              <col className="w-[8.5rem]" />
+              <col />
+              <col className="w-[7.5rem]" />
+              <col className="w-36" />
+            </colgroup>
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-900/50 text-left text-xs text-zinc-500">
-                <th className="w-8 px-3 py-2" />
+                <th className="px-3 py-2" aria-label="Expand" />
                 <th className="px-3 py-2">Feature</th>
-                <th className="px-3 py-2">Type</th>
+                <th className="px-3 py-2">Kind</th>
                 <th className="px-3 py-2">Value</th>
                 <th className="px-3 py-2">Tiers</th>
-                <th className="w-32 px-3 py-2">Actions</th>
+                <th className="px-3 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -546,27 +560,39 @@ export function PlanDetailPage() {
                 const hasTiers = (pf.tiers?.length ?? 0) > 0;
                 const isExpanded = expandedPf === pf.id;
                 return (
-                  <tbody key={pf.id}>
+                  <Fragment key={pf.id}>
                     <tr className="border-b border-zinc-800/50 hover:bg-zinc-900/30">
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2 align-middle">
                         {feat?.type === 'LIMIT' && (
                           <button type="button" onClick={() => setExpandedPf(isExpanded ? null : pf.id)} className="text-zinc-500 hover:text-white">
                             {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                           </button>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-white">{feat?.name ?? pf.featureId}</td>
-                      <td className="px-3 py-2">
-                        <Badge>
-                          {feat?.type === 'LIMIT'
-                            ? (feat.unitLabel ?? 'Limit')
-                            : feat?.type === 'CONFIG'
-                              ? (feat.configType === 'ENUM' ? 'Enum' : feat.configType === 'MONEY' ? 'Money' : 'Integer')
-                              : 'Boolean'}
-                        </Badge>
+                      <td className="px-3 py-2 align-middle text-white">{feat?.name ?? pf.featureId}</td>
+                      <td className="px-3 py-2 align-middle">
+                        {!feat ? (
+                          <span className="text-zinc-500">—</span>
+                        ) : feat.type === 'BOOLEAN' ? (
+                          <Badge>Boolean</Badge>
+                        ) : feat.type === 'LIMIT' ? (
+                          <div className="flex min-w-0 flex-col gap-0.5">
+                            <Badge>Limit</Badge>
+                            {feat.unitLabel?.trim() ? (
+                              <span className="truncate text-[10px] text-zinc-500" title={feat.unitLabel}>
+                                {feat.unitLabel}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="flex min-w-0 flex-col gap-0.5">
+                            <Badge>Config</Badge>
+                            <span className="text-[10px] text-zinc-500">{planFeatureConfigSubtype(feat)}</span>
+                          </div>
+                        )}
                       </td>
-                      <td className="px-3 py-2">{featureValueDisplay(pf)}</td>
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2 align-middle">{featureValueDisplay(pf)}</td>
+                      <td className="px-3 py-2 align-middle">
                         {feat?.type === 'LIMIT' ? (
                           hasTiers ? (
                             <span className="text-xs text-zinc-400">
@@ -575,10 +601,12 @@ export function PlanDetailPage() {
                           ) : (
                             <span className="text-xs text-zinc-600">none</span>
                           )
-                        ) : '—'}
+                        ) : (
+                          <span className="text-zinc-600">—</span>
+                        )}
                       </td>
-                      <td className="px-3 py-2">
-                        <div className="flex gap-1">
+                      <td className="px-3 py-2 align-middle">
+                        <div className="flex flex-wrap gap-1">
                           {feat?.type !== 'BOOLEAN' && (
                             <Button size="sm" variant="ghost" onClick={() => openEditPlanFeature(pf)}><Pencil size={14} /></Button>
                           )}
@@ -590,7 +618,7 @@ export function PlanDetailPage() {
                       </td>
                     </tr>
                     {isExpanded && hasTiers && (
-                      <tr className="bg-zinc-900/20">
+                      <tr className="border-b border-zinc-800/50 bg-zinc-900/20">
                         <td />
                         <td colSpan={5} className="px-3 py-2">
                           <p className="mb-1 text-xs font-medium text-zinc-400">
@@ -600,7 +628,7 @@ export function PlanDetailPage() {
                         </td>
                       </tr>
                     )}
-                  </tbody>
+                  </Fragment>
                 );
               })}
             </tbody>

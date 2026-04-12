@@ -618,14 +618,20 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
     }
   };
 
-  const typeLabel = (f: Feature) => {
-    if (f.type === 'LIMIT') return f.unitLabel ? `Limit (${f.unitLabel})` : 'Limit';
+  const featureKind = (f: Feature) => {
+    if (f.type === 'BOOLEAN') return 'Boolean';
+    if (f.type === 'LIMIT') return 'Limit';
+    return 'Config';
+  };
+
+  const featureKindDetail = (f: Feature) => {
+    if (f.type === 'LIMIT') return f.unitLabel?.trim() || '—';
     if (f.type === 'CONFIG') {
-      if (f.configType === 'ENUM') return 'Config (Enum)';
-      if (f.configType === 'MONEY') return 'Config (Money)';
-      return 'Config (Integer)';
+      if (f.configType === 'ENUM') return 'Enum';
+      if (f.configType === 'MONEY') return 'Money';
+      return 'Integer';
     }
-    return 'Boolean';
+    return '—';
   };
 
   const keysTakenInCreateFamily = (features.data ?? [])
@@ -672,30 +678,74 @@ function FeaturesTab({ tenantId }: { tenantId: string }) {
         <p className="mb-3 text-xs text-amber-500/90">Create a product family under Products &amp; Plans before adding features.</p>
       )}
       <DataTable<Feature>
+        tableLayout="fixed"
         columns={[
-          { key: 'name', header: 'Name', render: (r) => <span className="text-white">{r.name}</span> },
+          {
+            key: 'name',
+            header: 'Name',
+            className: 'w-[18%] max-w-[14rem]',
+            render: (r) => <span className="block truncate text-white" title={r.name}>{r.name}</span>,
+          },
           {
             key: 'family',
             header: 'Family',
+            className: 'w-[14%] max-w-[10rem]',
             render: (r) => (
-              <span className="text-zinc-400">{r.productFamily?.name ?? '—'}</span>
+              <span className="block truncate text-zinc-400" title={r.productFamily?.name}>
+                {r.productFamily?.name ?? '—'}
+              </span>
             ),
-            className: 'w-36',
           },
-          { key: 'key', header: 'Key', render: (r) => <code className="text-xs text-zinc-500">{r.key}</code> },
-          { key: 'type', header: 'Type', render: (r) => <Badge>{typeLabel(r)}</Badge> },
-          { key: 'desc', header: 'Description', render: (r) => <span className="text-zinc-400">{r.description ?? '—'}</span> },
-          { key: 'status', header: 'Status', render: (r) => <StatusBadge active={r.active} />, className: 'w-24' },
+          {
+            key: 'key',
+            header: 'Key',
+            className: 'w-[14%] max-w-[10rem]',
+            render: (r) => (
+              <code className="block truncate text-xs text-zinc-500" title={r.key}>{r.key}</code>
+            ),
+          },
+          {
+            key: 'kind',
+            header: 'Kind',
+            className: 'w-24',
+            render: (r) => <Badge>{featureKind(r)}</Badge>,
+          },
+          {
+            key: 'detail',
+            header: 'Detail',
+            className: 'w-28',
+            render: (r) => (
+              <span className="block truncate text-xs text-zinc-500" title={featureKindDetail(r)}>
+                {featureKindDetail(r)}
+              </span>
+            ),
+          },
+          {
+            key: 'desc',
+            header: 'Description',
+            className: 'min-w-0',
+            render: (r) => (
+              <span className="line-clamp-2 text-zinc-400" title={r.description ?? undefined}>
+                {r.description ?? '—'}
+              </span>
+            ),
+          },
+          {
+            key: 'status',
+            header: 'Status',
+            className: 'w-24',
+            render: (r) => <StatusBadge active={r.active} />,
+          },
           {
             key: 'actions',
             header: '',
+            className: 'w-28 text-right',
             render: (r) => (
-              <div className="flex gap-1">
+              <div className="flex justify-end gap-1">
                 <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); openEdit(r); }}><Pencil size={14} /></Button>
                 <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDelete(r); }}><Trash2 size={14} /></Button>
               </div>
             ),
-            className: 'w-24',
           },
         ]}
         data={features.data ?? []}
