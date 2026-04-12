@@ -24,6 +24,7 @@ import { Select } from '../components/ui/select';
 import { Badge, PlanStatusBadge } from '../components/ui/badge';
 import { useToast } from '../components/ui/toast';
 import { CURRENCIES, formatMinorUnits } from '../lib/currency';
+import { slugifyFromTitle } from '../lib/slug';
 import type { PlanFeature, PlanPrice, MeteringTier } from '../lib/types';
 
 export function PlanDetailPage() {
@@ -347,6 +348,10 @@ export function PlanDetailPage() {
     ? formatMinorUnits(parseInt(epAmount, 10) || 0, epCurrency)
     : null;
 
+  const planSlug = slugifyFromTitle(p.name) || 'plan';
+  const priceLabelExampleCreate = `${planSlug}_${priceInterval}`;
+  const priceLabelExampleEdit = `${planSlug}_${epInterval}`;
+
   return (
     <div className="space-y-8">
       <Breadcrumb
@@ -419,7 +424,11 @@ export function PlanDetailPage() {
         )}
         <DataTable<PlanPrice>
           columns={[
-            { key: 'name', header: 'Name', render: (r) => <span className="text-white">{r.name ?? '—'}</span> },
+            {
+              key: 'name',
+              header: 'Your label',
+              render: (r) => <span className="text-white">{r.name ?? '—'}</span>,
+            },
             { key: 'amount', header: 'Amount', render: (r) => <span className="font-mono text-white">{formatMinorUnits(r.unitAmountMinor, r.currency)}</span> },
             { key: 'interval', header: 'Interval', render: (r) => `/${r.billingInterval}` },
             { key: 'provider', header: 'Provider', render: (r) => <Badge>{r.provider}</Badge> },
@@ -597,7 +606,19 @@ export function PlanDetailPage() {
               { value: 'day', label: 'Daily' },
             ]}
           />
-          <Input label="Display Name (optional)" value={priceName} onChange={(e) => setPriceName(e.currentTarget.value)} placeholder="Pro Monthly" />
+          <div>
+            <Input
+              label="Your label for this price (optional)"
+              value={priceName}
+              onChange={(e) => setPriceName(e.currentTarget.value)}
+              placeholder={priceLabelExampleCreate}
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Pick a name you will recognise in admin and logs (not customer-facing). Example:{' '}
+              <code className="text-zinc-400">{priceLabelExampleCreate}</code>
+              {' '}— often <span className="font-mono text-zinc-400">{planSlug}</span> plus billing interval.
+            </p>
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setPriceOpen(false)}>Cancel</Button>
             <Button type="submit" size="sm" disabled={createPrice.isPending}>{createPrice.isPending ? 'Creating…' : 'Create'}</Button>
@@ -650,7 +671,19 @@ export function PlanDetailPage() {
               { value: 'day', label: 'Daily' },
             ]}
           />
-          <Input label="Display Name (optional)" value={epDisplayName} onChange={(e) => setEpDisplayName(e.currentTarget.value)} placeholder="Pro Monthly" />
+          <div>
+            <Input
+              label="Your label for this price (optional)"
+              value={epDisplayName}
+              onChange={(e) => setEpDisplayName(e.currentTarget.value)}
+              placeholder={priceLabelExampleEdit}
+            />
+            <p className="mt-1 text-xs text-zinc-500">
+              Pick a name you will recognise in admin and logs (not customer-facing). Example:{' '}
+              <code className="text-zinc-400">{priceLabelExampleEdit}</code>
+              .
+            </p>
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => setEditPriceRow(null)}>Cancel</Button>
             <Button type="submit" size="sm" disabled={updatePrice.isPending}>{updatePrice.isPending ? 'Saving…' : 'Save'}</Button>
