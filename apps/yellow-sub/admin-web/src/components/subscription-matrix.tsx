@@ -81,6 +81,7 @@ function familyMatrixTable(
   plans: PlanDetail[],
   isLoading: boolean,
 ) {
+  const tenantBase = `/customers/${customerId}/tenants/${tenantId}`;
   const sortedPlans = [...plans].sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
   const linkedFeatureIds = new Set<string>();
   for (const plan of sortedPlans) {
@@ -118,7 +119,7 @@ function familyMatrixTable(
             </th>
             {sortedPlans.map((plan) => {
               const priceLines = planPriceLines(plan);
-              const planBase = `/customers/${customerId}/tenants/${tenantId}/plans/${plan.id}`;
+              const planBase = `${tenantBase}/plans/${plan.id}`;
               return (
                 <th
                   key={plan.id}
@@ -128,7 +129,7 @@ function familyMatrixTable(
                     <div className="flex items-center justify-center gap-1">
                       <span>{plan.name}</span>
                       <Link
-                        to={`${planBase}?editPlan=1`}
+                        to={`${tenantBase}?overviewPlan=${encodeURIComponent(plan.id)}&overviewModal=plan`}
                         title="Edit plan"
                         className="inline-flex shrink-0 text-zinc-500 hover:text-emerald-400"
                         onClick={(e) => e.stopPropagation()}
@@ -162,7 +163,7 @@ function familyMatrixTable(
                             </span>
                             {line.priceId ? (
                               <Link
-                                to={`${planBase}?editPrice=${encodeURIComponent(line.priceId)}`}
+                                to={`${tenantBase}?overviewPlan=${encodeURIComponent(plan.id)}&overviewModal=price&overviewPrice=${encodeURIComponent(line.priceId)}`}
                                 title="Edit this price"
                                 className="inline-flex shrink-0 text-zinc-500 hover:text-emerald-400"
                                 onClick={(e) => e.stopPropagation()}
@@ -198,7 +199,7 @@ function familyMatrixTable(
                 <div className="flex items-center gap-1.5">
                   <span className="text-white">{feat.name}</span>
                   <Link
-                    to={`/customers/${customerId}/tenants/${tenantId}?tab=features&editFeature=${encodeURIComponent(feat.id)}&featureFamily=${encodeURIComponent(feat.productFamilyId)}`}
+                    to={`${tenantBase}?overviewEditFeature=${encodeURIComponent(feat.id)}&overviewFeatureFamily=${encodeURIComponent(feat.productFamilyId)}`}
                     title="Edit feature"
                     className="inline-flex shrink-0 text-zinc-500 hover:text-emerald-400"
                     onClick={(e) => e.stopPropagation()}
@@ -211,9 +212,24 @@ function familyMatrixTable(
               </td>
               {sortedPlans.map((plan) => {
                 const pf = plan.features.find((x) => x.featureId === feat.id);
+                const canEditPlanFeature =
+                  !!pf && feat.type !== 'BOOLEAN';
                 return (
                   <td key={`${plan.id}-${feat.id}`} className="px-2 py-2 text-center align-top">
-                    {featureCell(pf)}
+                    <div className="flex items-start justify-center gap-1">
+                      <div className="min-w-0 flex-1">{featureCell(pf)}</div>
+                      {canEditPlanFeature ? (
+                        <Link
+                          to={`${tenantBase}?overviewPlan=${encodeURIComponent(plan.id)}&overviewModal=planFeature&overviewPlanFeature=${encodeURIComponent(pf!.id)}`}
+                          title="Edit value on this plan"
+                          className="inline-flex shrink-0 pt-0.5 text-zinc-500 hover:text-emerald-400"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Pencil size={12} aria-hidden />
+                          <span className="sr-only">Edit plan feature</span>
+                        </Link>
+                      ) : null}
+                    </div>
                   </td>
                 );
               })}

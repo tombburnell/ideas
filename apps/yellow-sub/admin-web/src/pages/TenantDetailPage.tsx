@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Plus, Copy, Search, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 import {
@@ -34,6 +34,8 @@ import { Input, Textarea } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { Badge, StatusBadge, PlanStatusBadge, SubStatusBadge } from '../components/ui/badge';
 import { useToast } from '../components/ui/toast';
+import { OverviewFeatureEditFromUrl } from '../components/overview-feature-edit';
+import { PlanOverviewModals, type PlanOverviewModalKind } from '../components/plan-overview-modals';
 import { SubscriptionMatrix, type SubscriptionMatrixSection } from '../components/subscription-matrix';
 import { KeyField } from '../components/key-field';
 import type {
@@ -66,8 +68,42 @@ export function TenantDetailPage() {
   const tabFromUrl = searchParams.get('tab') ?? 'overview';
   const tab = TAB_IDS.has(tabFromUrl) ? tabFromUrl : 'overview';
 
+  const overviewPlanId = searchParams.get('overviewPlan');
+  const overviewModalRaw = searchParams.get('overviewModal');
+  const overviewModal: PlanOverviewModalKind | null =
+    overviewModalRaw === 'plan' || overviewModalRaw === 'price' || overviewModalRaw === 'planFeature'
+      ? overviewModalRaw
+      : null;
+  const overviewPriceId = searchParams.get('overviewPrice');
+  const overviewPlanFeatureId = searchParams.get('overviewPlanFeature');
+
+  const clearOverviewModalParams = useCallback(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('overviewPlan');
+      next.delete('overviewModal');
+      next.delete('overviewPrice');
+      next.delete('overviewPlanFeature');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
   const setTab = (id: string) => {
-    setSearchParams(id === 'overview' ? {} : { tab: id }, { replace: true });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (id === 'overview') {
+        next.delete('tab');
+      } else {
+        next.set('tab', id);
+        next.delete('overviewPlan');
+        next.delete('overviewModal');
+        next.delete('overviewPrice');
+        next.delete('overviewPlanFeature');
+        next.delete('overviewEditFeature');
+        next.delete('overviewFeatureFamily');
+      }
+      return next;
+    }, { replace: true });
   };
 
   const customers = useCustomers();
@@ -105,6 +141,22 @@ export function TenantDetailPage() {
         {tab === 'providers' && <ProvidersTab tenantId={tenantId!} />}
         {tab === 'events' && <EventsTab tenantId={tenantId!} />}
       </Tabs>
+      {tab === 'overview' && (
+        <>
+          <OverviewFeatureEditFromUrl tenantId={tenantId!} />
+          {overviewPlanId && overviewModal ? (
+            <PlanOverviewModals
+              customerId={customerId!}
+              tenantId={tenantId!}
+              planId={overviewPlanId}
+              modalKind={overviewModal}
+              priceId={overviewPriceId}
+              planFeatureId={overviewPlanFeatureId}
+              onClose={clearOverviewModalParams}
+            />
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

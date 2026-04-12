@@ -239,11 +239,12 @@ export function usePlans(tenantId: string) {
   });
 }
 
-export function usePlan(planId: string) {
+export function usePlan(planId: string, opts?: { enabled?: boolean }) {
   const getToken = useToken();
   return useQuery({
     queryKey: ['admin', 'plan', planId],
     queryFn: async () => get<PlanDetail>(`/api/v1/admin/plans/${planId}`, await getToken()),
+    enabled: opts?.enabled !== false && !!planId,
   });
 }
 
