@@ -1,8 +1,10 @@
+import { Fragment, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Pencil } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { formatMinorUnits } from '../lib/currency';
 import { formatPlanFeatureConfigDisplay } from '../lib/feature-config';
+import { formatIncludedLimitFragment } from '../lib/plan-feature-limit-display';
 import type { Feature, PlanDetail, PlanFeature, ProductFamily } from '../lib/types';
 
 function featureCell(pf: PlanFeature | undefined) {
@@ -18,17 +20,34 @@ function featureCell(pf: PlanFeature | undefined) {
       </span>
     );
   }
-  const parts: string[] = [];
-  if (pf.includedAmount != null) parts.push(`${pf.includedAmount.toLocaleString()} incl.`);
-  if (pf.softLimit != null) parts.push(`soft ${pf.softLimit.toLocaleString()}`);
-  if (pf.hardLimit != null) parts.push(`max ${pf.hardLimit.toLocaleString()}`);
-  if (!parts.length) parts.push('unlimited');
-  if (pf.limitPeriod && pf.limitPeriod !== 'LIFETIME') {
-    parts.push(`/${pf.limitPeriod.toLowerCase().replace('_', ' ')}`);
-  }
   const unit = feat.unitLabel?.trim();
-  const limitText = parts.join(' · ') + (unit ? ` ${unit}` : '');
-  return <span className="text-xs text-zinc-200">{limitText}</span>;
+  const segments: ReactNode[] = [];
+  if (pf.includedAmount != null) {
+    segments.push(formatIncludedLimitFragment(pf.includedAmount, unit, 'incl.'));
+  }
+  if (pf.softLimit != null) segments.push(`soft ${pf.softLimit.toLocaleString()}`);
+  if (pf.hardLimit != null) segments.push(`max ${pf.hardLimit.toLocaleString()}`);
+  if (!segments.length) segments.push('unlimited');
+  if (pf.limitPeriod && pf.limitPeriod !== 'LIFETIME') {
+    segments.push(`/${pf.limitPeriod.toLowerCase().replace('_', ' ')}`);
+  }
+  const trailingUnit = pf.includedAmount == null && unit ? (
+    <>
+      {' '}
+      <span className="text-zinc-500">{unit}</span>
+    </>
+  ) : null;
+  return (
+    <span className="text-xs text-zinc-200">
+      {segments.map((s, i) => (
+        <Fragment key={i}>
+          {i > 0 ? ' · ' : null}
+          {s}
+        </Fragment>
+      ))}
+      {trailingUnit}
+    </span>
+  );
 }
 
 function intervalLabel(iv: string) {
