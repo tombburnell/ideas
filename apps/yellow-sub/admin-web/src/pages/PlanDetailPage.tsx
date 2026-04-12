@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import {
   useCustomers,
@@ -32,6 +32,7 @@ export function PlanDetailPage() {
     tenantId: string;
     planId: string;
   }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const customers = useCustomers();
@@ -40,7 +41,9 @@ export function PlanDetailPage() {
   const tenant = tenants.data?.find((t) => t.id === tenantId);
   const plan = usePlan(planId!);
   const updatePlan = useUpdatePlan(planId!);
-  const features = useFeatures(tenantId!);
+  const features = useFeatures(tenantId!, plan.data?.productFamilyId, {
+    enabledWhenFamilyMissing: false,
+  });
   const accounts = useProviderAccounts(tenantId!);
   const createPrice = useCreatePlanPrice(tenantId!, planId!);
   const updatePrice = useUpdatePlanPrice(planId!);
@@ -351,9 +354,26 @@ export function PlanDetailPage() {
           { label: 'Customers', to: '/' },
           { label: customer.name, to: `/customers/${customerId}` },
           { label: tenant.name, to: `/customers/${customerId}/tenants/${tenantId}` },
+          {
+            label: 'Plans',
+            to: `/customers/${customerId}/tenants/${tenantId}?tab=products`,
+          },
           { label: p.name },
         ]}
       />
+
+      <div className="mb-4">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-zinc-400 hover:text-white"
+          onClick={() =>
+            navigate(`/customers/${customerId}/tenants/${tenantId}?tab=products`)
+          }
+        >
+          ← Back to plans
+        </Button>
+      </div>
 
       <div className="flex items-start justify-between">
         <div>

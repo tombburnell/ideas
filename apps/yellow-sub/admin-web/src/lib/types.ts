@@ -92,6 +92,7 @@ export type PlanPrice = {
 export type Feature = {
   id: string;
   tenantId: string;
+  productFamilyId: string;
   key: string;
   name: string;
   description?: string;
@@ -100,6 +101,7 @@ export type Feature = {
   configType?: 'INTEGER' | 'ENUM';
   configOptions?: string[];
   active: boolean;
+  productFamily?: Pick<ProductFamily, 'id' | 'key' | 'name'>;
 };
 
 export type MeteringTier = {

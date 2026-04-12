@@ -357,12 +357,21 @@ export function usePlansWithDetails(tenantId: string) {
 
 // ── Features ──
 
-export function useFeatures(tenantId: string) {
+export function useFeatures(
+  tenantId: string,
+  productFamilyId?: string,
+  opts?: { enabledWhenFamilyMissing?: boolean },
+) {
   const getToken = useToken();
+  const q = productFamilyId ? `?productFamilyId=${encodeURIComponent(productFamilyId)}` : '';
+  const waitForFamily = opts?.enabledWhenFamilyMissing === false;
+  const enabled =
+    !!tenantId && (!waitForFamily || productFamilyId !== undefined);
   return useQuery({
-    queryKey: ['admin', 'features', tenantId],
+    queryKey: ['admin', 'features', tenantId, productFamilyId ?? 'all'],
     queryFn: async () =>
-      get<Feature[]>(`/api/v1/admin/tenants/${tenantId}/features`, await getToken()),
+      get<Feature[]>(`/api/v1/admin/tenants/${tenantId}/features${q}`, await getToken()),
+    enabled,
   });
 }
 
@@ -371,6 +380,7 @@ export function useCreateFeature(tenantId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: {
+      productFamilyId: string;
       key: string;
       name: string;
       description?: string;
@@ -380,7 +390,9 @@ export function useCreateFeature(tenantId: string) {
       configOptions?: string[];
     }) =>
       post<Feature>(`/api/v1/admin/tenants/${tenantId}/features`, await getToken(), body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'features', tenantId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'features', tenantId] });
+    },
   });
 }
 

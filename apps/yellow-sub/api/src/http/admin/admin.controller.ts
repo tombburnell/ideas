@@ -324,17 +324,25 @@ export class AdminController {
   }
 
   @Get('tenants/:tenantId/features')
-  listFeatures(@Param('tenantId') tenantId: string) {
+  listFeatures(
+    @Param('tenantId') tenantId: string,
+    @Query('productFamilyId') productFamilyId?: string,
+  ) {
     return this.prisma.feature.findMany({
-      where: { tenantId },
+      where: {
+        tenantId,
+        ...(productFamilyId ? { productFamilyId } : {}),
+      },
+      include: { productFamily: { select: { id: true, key: true, name: true } } },
       orderBy: { name: 'asc' },
     });
   }
 
   @Post('tenants/:tenantId/features')
-  createFeature(
+  async createFeature(
     @Param('tenantId') tenantId: string,
     @Body() body: {
+      productFamilyId: string;
       key: string;
       name: string;
       description?: string;
@@ -344,9 +352,16 @@ export class AdminController {
       configOptions?: string[];
     },
   ) {
+    const family = await this.prisma.productFamily.findFirst({
+      where: { id: body.productFamilyId, tenantId },
+    });
+    if (!family) {
+      throw new BadRequestException('productFamilyId must belong to this tenant');
+    }
     return this.prisma.feature.create({
       data: {
         tenantId,
+        productFamilyId: body.productFamilyId,
         key: body.key,
         name: body.name,
         description: body.description,
@@ -355,6 +370,7 @@ export class AdminController {
         configType: body.configType,
         configOptions: body.configOptions,
       },
+      include: { productFamily: { select: { id: true, key: true, name: true } } },
     });
   }
 
@@ -371,7 +387,11 @@ export class AdminController {
       configOptions?: string[];
     },
   ) {
-    return this.prisma.feature.update({ where: { id: featureId }, data: body });
+    return this.prisma.feature.update({
+      where: { id: featureId },
+      data: body,
+      include: { productFamily: { select: { id: true, key: true, name: true } } },
+    });
   }
 
   @Delete('features/:featureId')
@@ -384,7 +404,8 @@ export class AdminController {
   }
 
   @Post('tenants/:tenantId/plans/:planId/plan-features')
-  linkPlanFeature(
+  async linkPlanFeature(
+    @Param('tenantId') tenantId: string,
     @Param('planId') planId: string,
     @Body() body: {
       featureId: string;
@@ -396,6 +417,21 @@ export class AdminController {
       configValue?: string;
     },
   ) {
+    const plan = await this.prisma.plan.findFirst({
+      where: { id: planId, tenantId },
+      select: { productFamilyId: true },
+    });
+    if (!plan) throw new BadRequestException('Plan not found');
+    const feature = await this.prisma.feature.findFirst({
+      where: { id: body.featureId, tenantId },
+      select: { productFamilyId: true },
+    });
+    if (!feature) throw new BadRequestException('Feature not found');
+    if (feature.productFamilyId !== plan.productFamilyId) {
+      throw new BadRequestException(
+        'Feature belongs to a different product family than this plan',
+      );
+    }
     return this.prisma.planFeature.create({
       data: {
         planId,

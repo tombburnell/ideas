@@ -155,9 +155,16 @@ async function main() {
   });
 
   await prisma.feature.upsert({
-    where: { tenantId_key: { tenantId: tenant.id, key: 'advanced_stats' } },
+    where: {
+      tenantId_productFamilyId_key: {
+        tenantId: tenant.id,
+        productFamilyId: family.id,
+        key: 'advanced_stats',
+      },
+    },
     create: {
       tenantId: tenant.id,
+      productFamilyId: family.id,
       key: 'advanced_stats',
       name: 'Advanced stats',
     },
@@ -165,13 +172,19 @@ async function main() {
   });
 
   const feat = await prisma.feature.findFirstOrThrow({
-    where: { tenantId: tenant.id, key: 'advanced_stats' },
+    where: {
+      tenantId_productFamilyId_key: {
+        tenantId: tenant.id,
+        productFamilyId: family.id,
+        key: 'advanced_stats',
+      },
+    },
   });
   await prisma.planFeature.upsert({
     where: {
       planId_featureId: { planId: plan.id, featureId: feat.id },
     },
-    create: { planId: plan.id, featureId: feat.id, enabled: true },
+    create: { planId: plan.id, featureId: feat.id },
     update: {},
   });
 
