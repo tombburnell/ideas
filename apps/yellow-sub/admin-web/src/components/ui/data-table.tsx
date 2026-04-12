@@ -16,6 +16,8 @@ type Props<T> = {
   isLoading?: boolean;
   emptyMessage?: string;
   emptyAction?: ReactNode;
+  /** `fixed` keeps column widths stable so headers align with cells. */
+  tableLayout?: 'auto' | 'fixed';
 };
 
 export function DataTable<T>({
@@ -26,6 +28,7 @@ export function DataTable<T>({
   isLoading,
   emptyMessage = 'No data',
   emptyAction,
+  tableLayout = 'auto',
 }: Props<T>) {
   if (isLoading) {
     return (
@@ -52,7 +55,12 @@ export function DataTable<T>({
 
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-800">
-      <table className="w-full text-sm">
+      <table
+        className={clsx(
+          'w-full text-sm',
+          tableLayout === 'fixed' && 'table-fixed',
+        )}
+      >
         <thead>
           <tr className="border-b border-zinc-800 bg-zinc-900/50">
             {columns.map((c) => (
