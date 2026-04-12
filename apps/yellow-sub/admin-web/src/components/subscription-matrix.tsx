@@ -123,7 +123,7 @@ function familyMatrixTable(
               return (
                 <th
                   key={plan.id}
-                  className="min-w-[160px] px-2 py-2 text-center align-bottom text-xs font-medium text-white"
+                  className="min-w-[160px] px-2 py-2 text-center align-top text-xs font-medium text-white"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center justify-center gap-1">
